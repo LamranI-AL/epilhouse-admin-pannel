@@ -1,0 +1,405 @@
+# Prompt Complet : Développement d'un Panneau d'Administration SaaS pour Entreprise d'Épilation
+
+Vous êtes un développeur Full-Stack expert spécialisé dans la création d'applications SaaS modernes. Votre mission est de développer un panneau d'administration complet pour une entreprise d'épilation avec un réseau de centres.
+
+## 🎯 Objectif Principal
+Créer un système de gestion multi-centres robuste, évolutif et convivial permettant la gestion complète des réservations, clients, agents et opérations commerciales d'une entreprise d'épilation.
+
+## 🛠️ Stack Technologique Imposée
+
+### Frontend
+- **Next.js 15** avec App Router (routing basé sur les dossiers)
+- **TypeScript** pour la sécurité de types
+- **Shadcn/UI** pour les composants d'interface
+- **Tailwind CSS** pour le styling
+- **Zustand** pour la gestion d'état globale
+- **React Hook Form** + **Zod** pour la validation des formulaires
+
+### Backend & Base de Données
+- **Firebase Suite complète** :
+  - Authentication (gestion des utilisateurs et rôles)
+  - Firestore (base de données NoSQL)
+  - Storage (stockage des fichiers)
+  - Functions (logique serveur)
+
+## 🏗️ Architecture du Système
+
+### Modèle de Données
+Le système repose sur une hiérarchie : Entreprise → Locations → Agents → Services → Réservations
+
+**Collections Firestore principales :**
+```
+/locations (centres d'épilation)
+/agents (employés liés à des locations)
+/services (prestations d'épilation)
+/bookings (réservations/rendez-vous)
+/clients (base clients)
+/orders (commandes/transactions)
+/payments (paiements)
+/coupons (codes promotionnels)
+/settings (configuration système)
+```
+
+### Système de Permissions
+- **Admin** : Accès total, gestion multi-centres
+- **Agent** : Accès limité à leur location assignée uniquement
+
+## 📋 Fonctionnalités Détaillées à Implémenter
+
+### 1. Dashboard Principal (Page d'accueil)
+**Inspiré de la première image fournie**
+
+```typescript
+// Métriques en temps réel à afficher
+interface DashboardMetrics {
+  totalBookings: number
+  revenue: number
+  workingHours: number
+  newCustomers: number
+  bookingTrend: Array<{date: string, count: number}>
+}
+```
+
+**Composants requis :**
+- Cartes de statistiques avec icônes et pourcentages d'évolution
+- Graphique linéaire des performances (utilisez Recharts)
+- Section "Prochains rendez-vous" (3 prochains RDV)
+- "Day Preview" avec vue calendaire du jour sélectionné
+- Filtres par location et service
+
+### 2. Calendrier Interactif
+**Inspiré de la deuxième image (vue hebdomadaire colorée)**
+
+**Fonctionnalités clés :**
+- Vue semaine/mois/jour
+- Créneaux colorés par type de service (1 Zone, 2 Zones, 3 Zones, etc.)
+- Indication "FULL" pour les créneaux complets
+- Drag & Drop pour déplacer les rendez-vous
+- Filtres par agent et location
+- Modal de détails au clic sur un créneau
+
+**Structure de données des créneaux :**
+```typescript
+interface TimeSlot {
+  id: string
+  startTime: Date
+  endTime: Date
+  serviceType: string
+  agentId: string
+  locationId: string
+  clientName: string
+  status: 'confirmed' | 'pending' | 'completed' | 'cancelled'
+  color: string
+}
+```
+
+### 3. Gestion des Rendez-vous
+**Table avancée avec DataTable Shadcn/UI**
+
+**Colonnes requises :**
+- IDENTIFIANT (ID unique)
+- SERVICE (type d'épilation)
+- DATE/HEURE
+- TIME LEFT (temps restant)
+- AGENT (nom de l'agent assigné)
+- CLIENT (informations client)
+- LOCATION (centre)
+
+**Fonctionnalités :**
+- Recherche en temps réel
+- Filtres multiples (service, date, agent, statut)
+- Export CSV
+- Actions CRUD complètes
+- Pagination avancée
+
+### 4. Gestion des Commandes/Orders
+**Table transactionnelle**
+
+**Données à gérer :**
+```typescript
+interface Order {
+  id: string
+  clientId: string
+  clientName: string
+  total: number
+  status: 'open' | 'closed' | 'pending'
+  paymentStatus: 'paid' | 'not_paid' | 'partial'
+  fulfillmentStatus: 'fulfilled' | 'not_fulfilled' | 'partial'
+  confirmationCode: string
+  createdAt: Date
+}
+```
+
+### 5. Base de Données Clients
+**CRM simplifié**
+
+**Informations client :**
+- Identifiant unique
+- Nom et prénom
+- Téléphone et email
+- Nombre total de réservations
+- Prochaine réservation
+- Historique des services
+
+### 6. Gestion des Services
+**Interface par onglets : Services | Bundles | Catégories | Service Extras**
+
+**Structure des services :**
+```typescript
+interface Service {
+  id: string
+  name: string // "1 Zone", "2 Zones", "3 Zones", "4 Zones", "5 Zones", "FULL BODY"
+  duration: number // en minutes
+  price: number
+  capacity: number
+  availableAgents: string[]
+  category: 'FEMMES' | 'HOMMES'
+  tampon: number // temps de pause entre services
+  isActive: boolean
+}
+```
+
+**Interface visuelle :**
+- Cartes de service avec durée, prix, capacité
+- Boutons d'édition sur chaque carte
+- Système d'ajout de nouveaux services
+- Gestion des agents assignés par service
+
+### 7. Gestion des Agents
+**Vue en cartes avec disponibilités**
+
+**Données agent :**
+```typescript
+interface Agent {
+  id: string
+  name: string
+  phone: string
+  email: string
+  locationIds: string[] // centres assignés
+  workingDays: string[] // jours de travail
+  workingHours: {start: string, end: string}
+  role: 'admin' | 'agent'
+  isOnLeave: boolean
+  leaveStartDate?: Date
+  leaveEndDate?: Date
+  totalBookings: number
+  status: 'active' | 'on_leave' | 'inactive'
+}
+```
+
+**Interface :**
+- Cartes agent avec photo de profil
+- Indicateurs de disponibilité (couleurs : vert = disponible, rouge = en congé)
+- Calendrier de disponibilité hebdomadaire
+- Nombre de réservations actuel
+
+### 8. Gestion des Locations
+**Vue carte avec intégration Google Maps**
+
+**Données location :**
+```typescript
+interface Location {
+  id: string
+  name: string
+  address: string
+  city: string
+  postalCode: string
+  country: string
+  coordinates: {lat: number, lng: number}
+  phone: string
+  email: string
+  workingHours: Record<string, {start: string, end: string}>
+  assignedAgents: string[]
+  category: string
+}
+```
+
+**Interface :**
+- Cartes Google Maps interactives
+- Détails de contact
+- Liste des agents assignés
+- Gestion des catégories de centres
+
+### 9. Système de Coupons
+```typescript
+interface Coupon {
+  id: string
+  code: string
+  type: 'percentage' | 'fixed_amount'
+  value: number
+  applicableServices: string[]
+  validFrom: Date
+  validUntil: Date
+  usageLimit: number
+  usedCount: number
+  isActive: boolean
+}
+```
+
+### 10. Gestion des Paiements
+**Suivi financier complet**
+- Statuts de paiement
+- Méthodes de paiement
+- Rapports financiers
+- Paiements partiels
+
+## 🎨 Directives UI/UX
+
+### Design System
+- **Palette de couleurs** : Reprendre les couleurs des images (bleu principal, cartes colorées pour services)
+- **Typographie** : Police moderne et lisible
+- **Espacement** : Utiliser le système Tailwind (4, 6, 8, 12, 16, 24)
+- **Responsive** : Mobile-first design
+
+### Composants Shadcn/UI à utiliser prioritairement
+- `DataTable` pour toutes les listes
+- `Card` pour les métriques et informations
+- `Calendar` pour les sélecteurs de date
+- `Dialog` pour les modales
+- `Form` avec validation Zod
+- `Select`, `Input`, `Button`
+- `Badge` pour les statuts
+- `Tabs` pour la navigation par sections
+
+### Navigation
+```
+Sidebar principal :
+├── 📊 Tableau de bord
+├── 📅 Calendrier  
+├── 📝 Rendez-vous
+├── 🛒 Orders
+├── 💳 Paiements
+├── 👥 Clients
+├── RESOURCES
+├── ⚙️ Services
+├── 👨‍💼 Agents
+├── 📍 Locations
+├── 🎫 Coupons
+├── PARAMÈTRES
+├── ⚙️ Paramètres
+├── 🤖 Automation
+├── 🔗 Integrations
+├── 📋 Form Fields
+└── 🧩 Add-ons
+```
+
+## 🔧 Configuration Technique Détaillée
+
+### Structure des Dossiers Next.js
+```
+src/
+├── app/
+│   ├── (dashboard)/
+│   │   ├── dashboard/
+│   │   ├── calendar/
+│   │   ├── bookings/
+│   │   ├── orders/
+│   │   ├── payments/
+│   │   ├── clients/
+│   │   ├── services/
+│   │   ├── agents/
+│   │   ├── locations/
+│   │   └── coupons/
+│   ├── auth/
+│   ├── api/
+│   └── globals.css
+├── components/
+│   ├── ui/ (Shadcn components)
+│   ├── dashboard/
+│   ├── forms/
+│   └── layout/
+├── lib/
+│   ├── firebase.ts
+│   ├── stores/ (Zustand stores)
+│   ├── utils.ts
+│   └── validations/ (Zod schemas)
+├── hooks/
+└── types/
+```
+
+### Configuration Firebase
+```javascript
+// lib/firebase.ts
+// Configuration complète avec règles de sécurité Firestore
+// Initialisation Authentication avec Custom Claims
+// Configuration Storage pour images
+```
+
+### Stores Zustand Requis
+```typescript
+// lib/stores/authStore.ts
+// lib/stores/bookingStore.ts  
+// lib/stores/clientStore.ts
+// lib/stores/locationStore.ts
+// lib/stores/serviceStore.ts
+// lib/stores/agentStore.ts
+```
+
+### Schémas de Validation Zod
+Créer des schémas pour toutes les entités avec validation complète.
+
+## 🔐 Sécurité & Permissions
+
+### Règles Firestore
+```javascript
+// Règles strictes par rôle
+// Agents : accès limité à leur location
+// Admins : accès complet
+// Validation des données côté serveur
+```
+
+### Authentication Firebase
+- Custom Claims pour les rôles
+- Middleware de protection des routes
+- Gestion des sessions
+
+## 📱 Responsiveness
+- Design adaptatif desktop/tablette
+- Navigation mobile optimisée
+- Tables scrollables horizontalement
+- Modales adaptées aux petits écrans
+
+## 🚀 Performance
+- Lazy loading des composants
+- Pagination des listes
+- Cache des requêtes Firebase
+- Optimisation des images
+- Code splitting par route
+
+## 📊 Fonctionnalités Avancées à Implémenter
+
+### Notifications en Temps Réel
+- Rappels de rendez-vous
+- Notifications de nouveaux bookings
+- Alertes système
+
+### Export/Import de Données
+- Export CSV de toutes les listes
+- Import en masse de clients
+- Sauvegarde de données
+
+### Rapports et Analytics
+- Graphiques de performance
+- Rapports financiers
+- Statistiques par agent/location
+
+## 🎯 Livrables Attendus
+
+1. **Application Next.js 15 complète** avec toutes les fonctionnalités
+2. **Base de données Firebase** structurée et sécurisée
+3. **Interface utilisateur** pixel-perfect selon les mockups
+4. **Documentation technique** complète
+5. **Guide de déploiement** et configuration
+6. **Tests unitaires** des composants critiques
+
+## 📝 Standards de Code
+- TypeScript strict mode
+- ESLint + Prettier configuration
+- Nomenclature cohérente
+- Commentaires JSDoc
+- Architecture modulaire
+- Gestion d'erreurs robuste
+
+---
+
+**Important :** Respectez scrupuleusement les mockups fournis pour l'interface utilisateur. L'application doit être production-ready avec une attention particulière à l'expérience utilisateur, la performance et la sécurité des données.
