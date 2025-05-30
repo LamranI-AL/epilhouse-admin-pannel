@@ -1,14 +1,18 @@
+/** @format */
+
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "demo-key",
-  authDomain: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebaseapp.com`,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project",
-  storageBucket: `${import.meta.env.VITE_FIREBASE_PROJECT_ID || "demo-project"}.firebasestorage.app`,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "demo-app-id",
+  apiKey: "AIzaSyDtohNEmKNXHT8GE9-mm9mRJepyOweD_po",
+  authDomain: "epilhouse-1a923.firebaseapp.com",
+  projectId: "epilhouse-1a923",
+  storageBucket: "epilhouse-1a923.firebasestorage.app",
+  messagingSenderId: "89507374295",
+  appId: "1:89507374295:web:4b52394cb50abeef6d7c92",
+  measurementId: "G-EE94QKSZ38",
 };
 
 const app = initializeApp(firebaseConfig);

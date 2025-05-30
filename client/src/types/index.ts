@@ -1,10 +1,12 @@
+/** @format */
+
 export interface DashboardMetrics {
   totalBookings: number;
   revenue: number;
   workingHours: number;
   newCustomers: number;
-  bookingTrend: Array<{date: string, count: number}>;
-  revenueTrend: Array<{date: string, revenue: number}>;
+  bookingTrend: Array<{ date: string; count: number }>;
+  revenueTrend: Array<{ date: string; revenue: number }>;
 }
 
 export interface TimeSlot {
@@ -17,12 +19,12 @@ export interface TimeSlot {
   agentName: string;
   locationId: string;
   clientName: string;
-  status: 'confirmed' | 'pending' | 'completed' | 'cancelled';
+  status: "confirmed" | "pending" | "completed" | "cancelled";
   color: string;
 }
 
 export interface ServiceWithAgents {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   duration: number;
@@ -32,7 +34,7 @@ export interface ServiceWithAgents {
   color: string;
   isActive: boolean;
   assignedAgents: Array<{
-    id: number;
+    id: string;
     firstName: string;
     lastName: string;
     displayName: string | null;
@@ -40,7 +42,7 @@ export interface ServiceWithAgents {
 }
 
 export interface AgentWithDetails {
-  id: number;
+  id: string;
   firstName: string;
   lastName: string;
   displayName: string | null;
@@ -49,17 +51,17 @@ export interface AgentWithDetails {
   title: string | null;
   bio: string | null;
   workingDays: string[] | null;
-  workingHours: {start: string, end: string} | null;
-  highlights: Array<{value: string, label: string}> | null;
+  workingHours: { start: string; end: string } | null;
+  highlights: Array<{ value: string; label: string }> | null;
   status: string;
   isOnLeave: boolean;
   totalBookings: number;
   assignedLocations: Array<{
-    id: number;
+    id: string;
     name: string;
   }>;
   assignedServices: Array<{
-    id: number;
+    id: string;
     name: string;
     color: string;
   }>;
@@ -104,16 +106,25 @@ export interface LocationWithAgents {
   city: string;
   postalCode: string;
   country: string;
+  location: {
+    latitude: number;
+    longitude: number;
+  };
   phone: string | null;
   email: string | null;
-  coordinates: {lat: number, lng: number} | null;
-  workingHours: Record<string, {start: string, end: string}> | null;
+  coordinates: { lat: number; lng: number } | null;
+  workingHours: Record<string, { start: string; end: string }> | null;
   isActive: boolean;
   assignedAgents: Array<{
     id: number;
     firstName: string;
     lastName: string;
     displayName: string | null;
+  }>;
+  assignedServices: Array<{
+    id: string;
+    name: string;
+    color: string;
   }>;
 }
 

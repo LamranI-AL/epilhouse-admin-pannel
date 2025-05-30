@@ -1,125 +1,182 @@
-import { useState } from 'react';
-import { ServiceCard } from '@/components/services/ServiceCard';
-import { ServiceForm } from '@/components/services/ServiceForm';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
-import { ServiceWithAgents } from '@/types';
-import { ServiceFormData } from '@/lib/validations/schemas';
-import { useToast } from '@/hooks/use-toast';
+/** @format */
+
+import { useEffect, useState } from "react";
+import { ServiceCard } from "@/components/services/ServiceCard";
+import { EnhancedServiceForm } from "@/components/services/ServiceForm";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus } from "lucide-react";
+import { ServiceWithAgents } from "@/types";
+import { ServiceFormData } from "@/lib/validations/schemas";
+import { useToast } from "@/hooks/use-toast";
+import {
+  addService,
+  deleteService,
+  getAllServices,
+  updateService,
+} from "@/actions/services";
+import { getAllAgents } from "@/actions/agents";
 
 // Mock data - in a real app, this would come from your API
-const mockServices: ServiceWithAgents[] = [
-  {
-    id: 1,
-    name: 'Épilation 1 Zone',
-    description: 'Zone simple',
-    duration: 30,
-    price: '45.00',
-    capacity: 4,
-    category: 'FEMMES',
-    color: 'blue',
-    isActive: true,
-    assignedAgents: [
-      { id: 1, firstName: 'Hanna', lastName: 'Bent', displayName: 'Hanna Bent' },
-      { id: 2, firstName: 'Agent', lastName: '2', displayName: 'Agent2' },
-      { id: 3, firstName: 'Mehdi', lastName: '', displayName: 'mehdi' },
-    ],
-  },
-  {
-    id: 2,
-    name: 'Épilation 2 Zones',
-    description: 'Deux zones combinées',
-    duration: 45,
-    price: '75.00',
-    capacity: 3,
-    category: 'FEMMES',
-    color: 'green',
-    isActive: true,
-    assignedAgents: [
-      { id: 1, firstName: 'Hanna', lastName: 'Bent', displayName: 'Hanna Bent' },
-      { id: 2, firstName: 'Agent', lastName: '2', displayName: 'Agent2' },
-    ],
-  },
-  {
-    id: 3,
-    name: 'Épilation 3 Zones',
-    description: 'Formule complète',
-    duration: 60,
-    price: '105.00',
-    capacity: 2,
-    category: 'FEMMES',
-    color: 'purple',
-    isActive: true,
-    assignedAgents: [
-      { id: 1, firstName: 'Hanna', lastName: 'Bent', displayName: 'Hanna Bent' },
-    ],
-  },
-  {
-    id: 4,
-    name: 'Épilation Full Body',
-    description: 'Corps complet',
-    duration: 120,
-    price: '200.00',
-    capacity: 1,
-    category: 'FEMMES',
-    color: 'red',
-    isActive: true,
-    assignedAgents: [
-      { id: 2, firstName: 'Agent', lastName: '2', displayName: 'Agent2' },
-      { id: 3, firstName: 'Mehdi', lastName: '', displayName: 'mehdi' },
-    ],
-  },
-];
+// const mockServices: ServiceWithAgents[] = [
+//   {
+//     id: 1,
+//     name: "Épilation 1 Zone",
+//     description: "Zone simple",
+//     duration: 30,
+//     price: "45.00",
+//     capacity: 4,
+//     category: "FEMMES",
+//     color: "blue",
+//     isActive: true,
+//     assignedAgents: [
+//       {
+//         id: 1,
+//         firstName: "Hanna",
+//         lastName: "Bent",
+//         displayName: "Hanna Bent",
+//       },
+//       { id: 2, firstName: "Agent", lastName: "2", displayName: "Agent2" },
+//       { id: 3, firstName: "Mehdi", lastName: "", displayName: "mehdi" },
+//     ],
+//   },
+//   {
+//     id: 2,
+//     name: "Épilation 2 Zones",
+//     description: "Deux zones combinées",
+//     duration: 45,
+//     price: "75.00",
+//     capacity: 3,
+//     category: "FEMMES",
+//     color: "green",
+//     isActive: true,
+//     assignedAgents: [
+//       {
+//         id: 1,
+//         firstName: "Hanna",
+//         lastName: "Bent",
+//         displayName: "Hanna Bent",
+//       },
+//       { id: 2, firstName: "Agent", lastName: "2", displayName: "Agent2" },
+//     ],
+//   },
+//   {
+//     id: 3,
+//     name: "Épilation 3 Zones",
+//     description: "Formule complète",
+//     duration: 60,
+//     price: "105.00",
+//     capacity: 2,
+//     category: "FEMMES",
+//     color: "purple",
+//     isActive: true,
+//     assignedAgents: [
+//       {
+//         id: 1,
+//         firstName: "Hanna",
+//         lastName: "Bent",
+//         displayName: "Hanna Bent",
+//       },
+//     ],
+//   },
+//   {
+//     id: 4,
+//     name: "Épilation Full Body",
+//     description: "Corps complet",
+//     duration: 120,
+//     price: "200.00",
+//     capacity: 1,
+//     category: "FEMMES",
+//     color: "red",
+//     isActive: true,
+//     assignedAgents: [
+//       { id: 2, firstName: "Agent", lastName: "2", displayName: "Agent2" },
+//       { id: 3, firstName: "Mehdi", lastName: "", displayName: "mehdi" },
+//     ],
+//   },
+// ];
 
 export default function Services() {
-  const [services, setServices] = useState<ServiceWithAgents[]>(mockServices);
-  const [selectedService, setSelectedService] = useState<ServiceWithAgents | null>(null);
+  const [services, setServices] = useState<ServiceWithAgents[]>([]);
+  const [selectedService, setSelectedService] =
+    useState<ServiceWithAgents | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
-
-  const handleCreateService = () => {
+  // fitcher les services
+  useEffect(() => {
+    const fitcheAllServices = async () => {
+      const data = await getAllServices();
+      console.log(data.services);
+      setServices(data.services as ServiceWithAgents[]);
+    };
+    fitcheAllServices();
+  }, []);
+  const getAllAgentsFitched = async (): Promise<any> => {
+    const data = await getAllAgents();
+    console.log(data.agents);
+    return data as any;
+  };
+  const handleCreateService = async () => {
     setSelectedService(null);
     setIsFormOpen(true);
+    // await addService(selectedService as any);
   };
 
   const handleEditService = (service: ServiceWithAgents) => {
     setSelectedService(service);
     setIsFormOpen(true);
+    console.log(service.id);
   };
 
-  const handleDeleteService = (id: number) => {
-    setServices(services.filter(s => s.id !== id));
+  const handleDeleteService = async (id: string) => {
+    await deleteService(id);
     toast({
       title: "Service supprimé",
       description: "Le service a été supprimé avec succès.",
     });
+    // refetch les services
+    const data = await getAllServices();
+    setServices(data.services as ServiceWithAgents[]);
   };
 
-  const handleFormSubmit = (data: ServiceFormData) => {
+  const handleFormSubmit = async (
+    data: ServiceFormData,
+    assignedAgents: string[],
+  ) => {
     if (selectedService) {
-      // Update existing service
-      setServices(services.map(s => 
-        s.id === selectedService.id 
-          ? { ...s, ...data, assignedAgents: s.assignedAgents }
-          : s
-      ));
+      const newService: ServiceWithAgents | any = {
+        ...data,
+        assignedAgents: assignedAgents,
+      };
+      console.log(selectedService.id);
+      await updateService(selectedService.id, newService as any);
       toast({
         title: "Service modifié",
         description: "Le service a été modifié avec succès.",
       });
+      // refetch les services
+      const dataFitched = await getAllServices();
+      setServices(dataFitched.services as ServiceWithAgents[]);
     } else {
       // Create new service
-      const newService: ServiceWithAgents = {
-        id: Math.max(...services.map(s => s.id)) + 1,
+      const newService: ServiceWithAgents | any = {
         ...data,
-        assignedAgents: [],
+        assignedAgents: assignedAgents,
       };
-      setServices([...services, newService]);
+      console.log(newService);
+      await addService(newService as any);
       toast({
         title: "Service créé",
         description: "Le service a été créé avec succès.",
       });
+      // refetch les services
+      const dataFitched = await getAllServices();
+      setServices(dataFitched.services as ServiceWithAgents[]);
     }
     setIsFormOpen(false);
   };
@@ -158,17 +215,22 @@ export default function Services() {
       </div>
 
       {/* Service Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedService ? 'Modifier le service' : 'Créer un nouveau service'}
+              {selectedService
+                ? "Modifier le service"
+                : "Créer un nouveau service"}
             </DialogTitle>
           </DialogHeader>
-          <ServiceForm
-            service={selectedService}
+          <EnhancedServiceForm
+            service={selectedService as any}
             onSubmit={handleFormSubmit}
             onCancel={handleFormCancel}
+            getAllAgents={getAllAgentsFitched}
           />
         </DialogContent>
       </Dialog>

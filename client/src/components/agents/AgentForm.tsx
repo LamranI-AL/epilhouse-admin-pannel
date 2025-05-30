@@ -1,11 +1,12 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { agentSchema, AgentFormData } from '@/lib/validations/schemas';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
+/** @format */
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { agentSchema, AgentFormData } from "@/lib/validations/schemas";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -13,17 +14,17 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form';
+} from "@/components/ui/form";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AgentWithDetails } from '@/types';
-import { Camera } from 'lucide-react';
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AgentWithDetails } from "@/types";
+import { Camera } from "lucide-react";
 
 interface AgentFormProps {
   agent?: AgentWithDetails;
@@ -32,51 +33,55 @@ interface AgentFormProps {
 }
 
 const weekDays = [
-  { id: 'monday', label: 'Lundi', value: 'lundi' },
-  { id: 'tuesday', label: 'Mardi', value: 'mardi' },
-  { id: 'wednesday', label: 'Mercredi', value: 'mercredi' },
-  { id: 'thursday', label: 'Jeudi', value: 'jeudi' },
-  { id: 'friday', label: 'Vendredi', value: 'vendredi' },
-  { id: 'saturday', label: 'Samedi', value: 'samedi' },
-  { id: 'sunday', label: 'Dimanche', value: 'dimanche' },
+  { id: "monday", label: "Lundi", value: "lundi" },
+  { id: "tuesday", label: "Mardi", value: "mardi" },
+  { id: "wednesday", label: "Mercredi", value: "mercredi" },
+  { id: "thursday", label: "Jeudi", value: "jeudi" },
+  { id: "friday", label: "Vendredi", value: "vendredi" },
+  { id: "saturday", label: "Samedi", value: "samedi" },
+  { id: "sunday", label: "Dimanche", value: "dimanche" },
 ];
 
 export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
   const form = useForm<AgentFormData>({
     resolver: zodResolver(agentSchema),
-    defaultValues: agent ? {
-      firstName: agent.firstName,
-      lastName: agent.lastName,
-      displayName: agent.displayName || '',
-      email: agent.email,
-      phone: agent.phone || '',
-      title: agent.title || '',
-      bio: agent.bio || '',
-      workingDays: agent.workingDays || [],
-      workingHours: agent.workingHours || { start: '09:00', end: '18:00' },
-      highlights: agent.highlights || [],
-      status: agent.status as 'active' | 'on_leave' | 'inactive',
-      isOnLeave: agent.isOnLeave,
-    } : {
-      firstName: '',
-      lastName: '',
-      displayName: '',
-      email: '',
-      phone: '',
-      title: '',
-      bio: '',
-      workingDays: [],
-      workingHours: { start: '09:00', end: '18:00' },
-      highlights: [],
-      status: 'active',
-      isOnLeave: false,
-    },
+    defaultValues: agent
+      ? {
+          firstName: agent.firstName,
+          lastName: agent.lastName,
+          displayName: agent.displayName || "",
+          email: agent.email,
+          phone: agent.phone || "",
+          title: agent.title || "",
+          bio: agent.bio || "",
+          workingDays: agent.workingDays || [],
+          workingHours: agent.workingHours || { start: "09:00", end: "18:00" },
+          highlights: agent.highlights || [],
+          status: agent.status as "active" | "on_leave" | "inactive",
+          isOnLeave: agent.isOnLeave,
+        }
+      : {
+          firstName: "",
+          lastName: "",
+          displayName: "",
+          email: "",
+          phone: "",
+          title: "",
+          bio: "",
+          workingDays: [],
+          workingHours: { start: "09:00", end: "18:00" },
+          highlights: [],
+          status: "active",
+          isOnLeave: false,
+        },
   });
 
   return (
     <div className="space-y-8">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-8">
           {/* General Information */}
           <Card>
             <CardHeader>
@@ -88,7 +93,10 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center border-2 border-dashed border-gray-300">
                   <Camera className="h-6 w-6 text-gray-400" />
                 </div>
-                <Button type="button" variant="outline" size="sm">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm">
                   Définir l'avatar
                 </Button>
               </div>
@@ -101,13 +109,16 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                     <FormItem>
                       <FormLabel>Prénom</FormLabel>
                       <FormControl>
-                        <Input placeholder="Prénom" {...field} />
+                        <Input
+                          placeholder="Prénom"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="lastName"
@@ -115,13 +126,16 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                     <FormItem>
                       <FormLabel>Nom</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nom" {...field} />
+                        <Input
+                          placeholder="Nom"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="displayName"
@@ -129,7 +143,10 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                     <FormItem>
                       <FormLabel>Nom d'affichage</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nom d'affichage" {...field} />
+                        <Input
+                          placeholder="Nom d'affichage"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -145,13 +162,17 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="email@exemple.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="email@exemple.com"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="phone"
@@ -159,7 +180,10 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                     <FormItem>
                       <FormLabel>Téléphone</FormLabel>
                       <FormControl>
-                        <Input placeholder="06 12 34 56 78" {...field} />
+                        <Input
+                          placeholder="06 12 34 56 78"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -173,7 +197,9 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Statut</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Sélectionnez un statut" />
@@ -205,13 +231,16 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                   <FormItem>
                     <FormLabel>Titre de l'agent</FormLabel>
                     <FormControl>
-                      <Input placeholder="ex: Esthéticienne Senior" {...field} />
+                      <Input
+                        placeholder="ex: Esthéticienne Senior"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="bio"
@@ -219,7 +248,7 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                   <FormItem>
                     <FormLabel>Bio</FormLabel>
                     <FormControl>
-                      <Textarea 
+                      <Textarea
                         placeholder="Description de l'agent, expérience, spécialités..."
                         className="resize-none"
                         rows={4}
@@ -249,17 +278,18 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                       {weekDays.map((day) => (
                         <div
                           key={day.id}
-                          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg"
-                        >
+                          className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <Checkbox
                               checked={field.value?.includes(day.value)}
-                              onCheckedChange={(checked) => {
+                              onCheckedChange={(checked: any) => {
                                 const current = field.value || [];
                                 if (checked) {
                                   field.onChange([...current, day.value]);
                                 } else {
-                                  field.onChange(current.filter(d => d !== day.value));
+                                  field.onChange(
+                                    current.filter((d) => d !== day.value),
+                                  );
                                 }
                               }}
                             />
@@ -281,11 +311,14 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
           </Card>
 
           <div className="flex justify-end space-x-4">
-            <Button type="button" variant="outline" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}>
               Annuler
             </Button>
             <Button type="submit">
-              {agent ? 'Modifier' : 'Créer'} l'agent
+              {agent ? "Modifier" : "Créer"} l'agent
             </Button>
           </div>
         </form>
