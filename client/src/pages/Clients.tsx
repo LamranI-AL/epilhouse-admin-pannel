@@ -1,4 +1,7 @@
-import { Card, CardContent } from '@/components/ui/card';
+/** @format */
+
+import { Card, CardContent } from "@/components/ui/card";
+import UserList from "@/components/users/UserList";
 
 export default function Clients() {
   return (
@@ -12,11 +15,7 @@ export default function Clients() {
       </div>
 
       <Card>
-        <CardContent className="p-8 text-center">
-          <p className="text-gray-500">
-            La page de gestion des clients sera bientôt disponible.
-          </p>
-        </CardContent>
+        <UserList />
       </Card>
     </div>
   );

@@ -1,142 +1,216 @@
-import { useState } from 'react';
-import { WeeklyCalendar } from '@/components/calendar/WeeklyCalendar';
-import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TimeSlot } from '@/types';
+/** @format */
 
-// Mock data - in a real app, this would come from your API
-const mockTimeSlots: TimeSlot[] = [
-  {
-    id: '1',
-    startTime: new Date('2024-11-26T09:00:00'),
-    endTime: new Date('2024-11-26T09:30:00'),
-    serviceType: '1 Zone',
-    serviceName: 'Épilation 1 Zone',
-    agentId: '1',
-    agentName: 'Hanna Bent',
-    locationId: '1',
-    clientName: 'Sophie M.',
-    status: 'confirmed',
-    color: 'blue',
-  },
-  {
-    id: '2',
-    startTime: new Date('2024-11-28T09:00:00'),
-    endTime: new Date('2024-11-28T09:45:00'),
-    serviceType: '2 Zones',
-    serviceName: 'Épilation 2 Zones',
-    agentId: '2',
-    agentName: 'Agent2',
-    locationId: '1',
-    clientName: 'Emma D.',
-    status: 'confirmed',
-    color: 'green',
-  },
-  {
-    id: '3',
-    startTime: new Date('2024-11-27T10:00:00'),
-    endTime: new Date('2024-11-27T11:00:00'),
-    serviceType: '3 Zones',
-    serviceName: 'Épilation 3 Zones',
-    agentId: '1',
-    agentName: 'Hanna Bent',
-    locationId: '1',
-    clientName: 'Julie L.',
-    status: 'confirmed',
-    color: 'purple',
-  },
-  {
-    id: '4',
-    startTime: new Date('2024-11-29T10:00:00'),
-    endTime: new Date('2024-11-29T12:00:00'),
-    serviceType: 'Full Body',
-    serviceName: 'Épilation Full Body',
-    agentId: '3',
-    agentName: 'Mehdi',
-    locationId: '1',
-    clientName: 'Marie P.',
-    status: 'confirmed',
-    color: 'red',
-  },
-];
+// components/BookingCalendar.tsx
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  Clock,
+  User,
+  Phone,
+  Mail,
+  DollarSign,
+  MapPin,
+  Settings,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+import { QuickReservation } from "@/types";
+import { useBooking } from "@/hooks/use-booking";
+import { updateBookingStatus, deleteQuickBooking } from "@/actions/Bookings";
 
-const legendItems = [
-  { service: '1 Zone', color: 'bg-blue-100 border-blue-200' },
-  { service: '2 Zones', color: 'bg-green-100 border-green-200' },
-  { service: '3 Zones', color: 'bg-purple-100 border-purple-200' },
-  { service: '4 Zones', color: 'bg-orange-100 border-orange-200' },
-  { service: '5 Zones', color: 'bg-yellow-100 border-yellow-200' },
-  { service: 'Full Body', color: 'bg-red-100 border-red-200' },
-];
+import BookingModal from "@/components/calendar/BookingModal";
+import CalendarGrid from "@/components/calendar/calander";
+import WeekStats from "@/components/calendar/WeekStats";
 
-export default function Calendar() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedAgent, setSelectedAgent] = useState<string>('all');
-  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+const BookingCalendar = () => {
+  const { quickBookings } = useBooking();
 
-  const handleSlotClick = (slot: TimeSlot) => {
-    console.log('Slot clicked:', slot);
-    // Here you would open a modal or navigate to edit the booking
+  // State pour les données
+  const [reservations, setReservations] = useState<QuickReservation[]>([]);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedBooking, setSelectedBooking] =
+    useState<QuickReservation | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Charger les données initiales
+  useEffect(() => {
+    if (quickBookings) {
+      setReservations(quickBookings);
+    }
+  }, [quickBookings]);
+
+  // Fonctions utilitaires pour le calendrier
+  const getWeekStart = (date: Date) => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Lundi = premier jour
+    return new Date(d.setDate(diff));
+  };
+
+  const getWeekDays = (startDate: Date) => {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(startDate);
+      day.setDate(startDate.getDate() + i);
+      days.push(day);
+    }
+    return days;
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const getBookingsForDate = (date: Date) => {
+    const dateStr = formatDate(date);
+    return reservations.filter((booking) => booking.selectedDate === dateStr);
+  };
+
+  const weekStart = getWeekStart(currentDate);
+  const weekDays = getWeekDays(weekStart);
+
+  const navigateWeek = (direction: number) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(currentDate.getDate() + direction * 7);
+    setCurrentDate(newDate);
+  };
+
+  // Actions sur les réservations
+  const handleAccept = async (id: string) => {
+    setLoading(true);
+    try {
+      await updateBookingStatus(id, "confirmed");
+      setReservations((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, status: "confirmed" as const, updatedAt: new Date() }
+            : r,
+        ),
+      );
+    } catch (error) {
+      console.error("Erreur lors de l'acceptation:", error);
+      alert("Erreur lors de la confirmation de la réservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    setLoading(true);
+    try {
+      await updateBookingStatus(id, "cancelled");
+      setReservations((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, status: "cancelled" as const, updatedAt: new Date() }
+            : r,
+        ),
+      );
+    } catch (error) {
+      console.error("Erreur lors du rejet:", error);
+      alert("Erreur lors de l'annulation de la réservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setLoading(true);
+    try {
+      await deleteQuickBooking(id);
+      setReservations((prev) => prev.filter((r) => r.id !== id));
+      setShowModal(false);
+      setSelectedBooking(null);
+    } catch (error) {
+      console.error("Erreur lors de la suppression:", error);
+      alert("Erreur lors de la suppression de la réservation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBookingClick = (booking: QuickReservation) => {
+    setSelectedBooking(booking);
+    setShowModal(true);
+  };
+
+  const getMonthYear = () => {
+    return currentDate.toLocaleDateString("fr-FR", {
+      month: "long",
+      year: "numeric",
+    });
   };
 
   return (
-    <div className="space-y-8">
-      <div className="md:flex md:items-center md:justify-between">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
-            Calendrier des Rendez-vous
-          </h2>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="bg-white rounded-lg shadow-lg">
+        {/* Header */}
+        <div className="px-6 py-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold">
+                Calendrier des Réservations
+              </h1>
+              <p className="text-blue-100">Vue hebdomadaire des rendez-vous</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigateWeek(-1)}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                title="Semaine précédente">
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-center">
+                <div className="text-lg font-semibold">{getMonthYear()}</div>
+                <div className="text-sm text-blue-100">
+                  {weekDays[0].getDate()} - {weekDays[6].getDate()}
+                </div>
+              </div>
+              <button
+                onClick={() => navigateWeek(1)}
+                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                title="Semaine suivante">
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
         </div>
-        <div className="mt-4 flex space-x-3 md:ml-4 md:mt-0">
-          <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Tous les agents" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Tous les agents</SelectItem>
-              <SelectItem value="1">Hanna Bent</SelectItem>
-              <SelectItem value="2">Agent2</SelectItem>
-              <SelectItem value="3">Mehdi</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={selectedLocation} onValueChange={setSelectedLocation}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Toutes les locations" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Toutes les locations</SelectItem>
-              <SelectItem value="1">Paris Centre</SelectItem>
-              <SelectItem value="2">Lyon Part-Dieu</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+
+        {/* Grille du calendrier */}
+        <CalendarGrid
+          weekDays={weekDays}
+          reservations={reservations}
+          onBookingClick={handleBookingClick}
+          getBookingsForDate={getBookingsForDate}
+        />
+
+        {/* Statistiques de la semaine */}
+        <WeekStats
+          weekDays={weekDays}
+          getBookingsForDate={getBookingsForDate}
+        />
       </div>
 
-      {/* Calendar Widget */}
-      <WeeklyCalendar
-        timeSlots={mockTimeSlots}
-        selectedDate={selectedDate}
-        onDateChange={setSelectedDate}
-        onSlotClick={handleSlotClick}
-      />
-
-      {/* Legend */}
-      <Card className="border border-gray-200">
-        <CardContent className="p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">
-            Légende des Services
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {legendItems.map((item) => (
-              <div key={item.service} className="flex items-center space-x-2">
-                <div className={`w-4 h-4 rounded border ${item.color}`} />
-                <span className="text-sm text-gray-700">{item.service}</span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Modal de détails */}
+      {showModal && selectedBooking && (
+        <BookingModal
+          booking={selectedBooking}
+          onClose={() => setShowModal(false)}
+          onAccept={handleAccept}
+          onReject={handleReject}
+          onDelete={handleDelete}
+          loading={loading}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default BookingCalendar;

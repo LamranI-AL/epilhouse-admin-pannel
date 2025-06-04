@@ -22,7 +22,7 @@ import { db } from "@/lib/firebase";
 import { AgentWithDetails } from "@/types";
 
 // CREATE: Add a new agent
-export async function addAgent(data: AgentWithDetails) {
+export async function addAgent(data: any) {
   const {
     firstName,
     lastName,
@@ -30,6 +30,7 @@ export async function addAgent(data: AgentWithDetails) {
     email,
     phone,
     title,
+    role,
     bio,
     workingDays,
     workingHours,
@@ -48,6 +49,7 @@ export async function addAgent(data: AgentWithDetails) {
     email,
     phone,
     title,
+    role,
     bio,
     workingDays,
     workingHours,
@@ -63,7 +65,7 @@ export async function addAgent(data: AgentWithDetails) {
 
   try {
     const agentRef = collection(db, "agents");
-    const docRef = await addDoc(agentRef, newAgent);
+    const docRef = await addDoc(agentRef, data);
 
     return { success: true, id: docRef.id };
   } catch (error) {

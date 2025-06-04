@@ -55,7 +55,10 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      setBookings(quickBookings);
+      const filteredBookings = quickBookings.filter(
+        (booking: any) => booking?.agent?.id === currentUser?.uid,
+      );
+      setBookings(filteredBookings);
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
     } finally {
@@ -81,7 +84,7 @@ const AdminDashboard = () => {
   ).length;
 
   const totalRevenue = bookings
-    .filter((b) => b.status === "confirmed" || b.status === "pending")
+    // .filter((b) => b.status === "confirmed" || b.status === "pending")
     .reduce((sum, b) => sum + b.totalAmount, 0);
 
   const averageBookingValue =

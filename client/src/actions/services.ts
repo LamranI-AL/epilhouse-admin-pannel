@@ -23,36 +23,47 @@ import { updateAgent, getAgentById } from "./agents"; // Import des fonctions ag
 import { ServiceWithAgents } from "@/types";
 
 // CREATE: Add a new service
-export async function addService(data: ServiceWithAgents) {
-  const {
-    name,
-    description,
-    duration,
-    price,
-    capacity,
-    category,
-    color,
-    isActive,
-    assignedAgents,
-  } = data;
+export async function addService(data: ServiceWithAgents | any) {
+  // const {
+  //   name,
+  //   description,
+  //   duration,
+  //   price,
+  //   capacity,
+  //   category,
+  //   color,
+  //   isActive,
+  //   assignedAgents,
+  //   subServices,
+  //   discountPrice,
+  // } = data;
 
-  const newService = {
-    name,
-    description,
-    duration,
-    price,
-    capacity,
-    category,
-    color,
-    isActive,
-    assignedAgents: assignedAgents || [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+  // const newService = {
+  //   name,
+  //   description,
+
+  //   price,
+  //   capacity,
+  //   category,
+  //   color,
+  //   isActive,
+  //   subServices: {
+  //     duration,
+  //     price,
+  //     discountPrice,
+  //     description,
+  //     name,
+  //     color,
+  //     isActive,
+  //   },
+  //   assignedAgents: assignedAgents || [],
+  //   createdAt: new Date(),
+  //   updatedAt: new Date(),
+  // };
 
   try {
     const serviceRef = collection(db, "services");
-    const docRef = await addDoc(serviceRef, newService);
+    const docRef = await addDoc(serviceRef, data);
 
     return { success: true, id: docRef.id };
   } catch (error) {
@@ -269,8 +280,8 @@ export async function assignAgentToService(serviceId: string, agentId: string) {
 
     // 4. Vérifier la capacité du service
     if (
-      service.assignedAgents &&
-      service.assignedAgents.length >= service.capacity
+      service.assignedAgents
+      // service.assignedAgents.length >= service.capacity
     ) {
       return { success: false, error: "Service has reached maximum capacity" };
     }
@@ -503,5 +514,191 @@ export async function getServiceStatistics() {
   } catch (error) {
     console.error("Error getting service statistics:", error);
     return { success: false, error: (error as Error).message };
+  }
+}
+export interface SubServiceResult {
+  id: string;
+  name: string;
+  description: string | null;
+  duration: number;
+  normalPrice: number;
+  discountPrice: number;
+  parentService: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
+// GET: Get sub-services by IDs
+export async function getSubServicesByIds(subServiceIds: string[]) {
+  try {
+    if (!subServiceIds || subServiceIds.length === 0) {
+      return {
+        success: true,
+        subServices: [],
+        message: "Aucun ID de sous-service fourni",
+      };
+    }
+
+    const serviceRef = collection(db, "services");
+    const querySnapshot = await getDocs(serviceRef);
+
+    const foundSubServices: SubServiceResult[] = [];
+    const notFoundIds: string[] = [];
+
+    // Parcourir tous les services pour trouver les sous-services correspondants
+    querySnapshot.forEach((doc) => {
+      const serviceData = doc.data() as ServiceWithAgents;
+      const service = {
+        // id: doc.id,
+        ...serviceData,
+      };
+
+      // Vérifier si ce service contient des sous-services recherchés
+      if (service.subServices && service.subServices.length > 0) {
+        service.subServices.forEach((subService) => {
+          if (subServiceIds.includes(subService.id)) {
+            foundSubServices.push({
+              id: subService.id,
+              name: subService.name,
+              description: subService.description,
+              duration: subService.duration,
+              normalPrice: subService.normalPrice,
+              discountPrice: subService.discountPrice,
+              parentService: {
+                id: service.id,
+                name: service.name,
+                color: service.color,
+              },
+            });
+          }
+        });
+      }
+    });
+
+    // Identifier les IDs non trouvés
+    const foundIds = foundSubServices.map((sub) => sub.id);
+    subServiceIds.forEach((id) => {
+      if (!foundIds.includes(id)) {
+        notFoundIds.push(id);
+      }
+    });
+
+    return {
+      success: true,
+      subServices: foundSubServices,
+      notFoundIds,
+      totalRequested: subServiceIds.length,
+      totalFound: foundSubServices.length,
+    };
+  } catch (error) {
+    console.error("Error getting sub-services by IDs:", error);
+    return {
+      success: false,
+      error: (error as Error).message,
+      subServices: [],
+    };
+  }
+}
+
+/**
+ * Version simplifiée qui retourne seulement les noms des sous-services et catégories
+ * @param subServiceIds - Tableau des IDs des sous-services
+ * @returns Tableau simplifié avec nom du sous-service et catégorie principale
+ */
+export async function getSubServiceNamesAndCategories(subServiceIds: string[]) {
+  try {
+    const result = await getSubServicesByIds(subServiceIds);
+
+    if (!result.success) {
+      return result;
+    }
+
+    const simplifiedResult = result.subServices.map((subService) => ({
+      subServiceId: subService.id,
+      subServiceName: subService.name,
+      categoryId: subService.parentService.id,
+      categoryName: subService.parentService.name,
+      categoryColor: subService.parentService.color,
+    }));
+
+    return {
+      success: true,
+      data: simplifiedResult,
+      notFoundIds: result.notFoundIds,
+      totalRequested: result.totalRequested,
+      totalFound: result.totalFound,
+    };
+  } catch (error) {
+    console.error("Error getting sub-service names and categories:", error);
+    // return {
+    //   success: false,
+    //   error: (error as Error).message,
+    //   data: [],
+    // };
+  }
+}
+export async function getSubServiceNames(subServiceIds: string[]) {
+  try {
+    const result = await getSubServicesByIds(subServiceIds);
+
+    if (!result.success) {
+      return {
+        success: false,
+        error: result.error,
+        names: [],
+      };
+    }
+
+    const names = result.subServices.map((subService) => ({
+      id: subService.id,
+      name: subService.name,
+      parentCategory: subService.parentService.name,
+    }));
+
+    return {
+      success: true,
+      names,
+      notFoundIds: result.notFoundIds,
+    };
+  } catch (error) {
+    console.error("Error getting sub-service names:", error);
+    return {
+      success: false,
+      error: (error as Error).message,
+      names: [],
+    };
+  }
+}
+
+export async function validateSubServiceIds(subServiceIds: string[]) {
+  try {
+    const result = await getSubServicesByIds(subServiceIds);
+
+    if (!result.success) {
+      return result;
+    }
+
+    const isValid = result.notFoundIds?.length === 0;
+
+    return {
+      success: true,
+      isValid,
+      validIds: result.subServices.map((sub) => sub.id),
+      invalidIds: result.notFoundIds,
+      details: {
+        totalRequested: result.totalRequested,
+        totalFound: result.totalFound,
+        totalInvalid: result.notFoundIds?.length,
+      },
+    };
+  } catch (error) {
+    console.error("Error validating sub-service IDs:", error);
+    return {
+      success: false,
+      error: (error as Error).message,
+      isValid: false,
+    };
   }
 }

@@ -1,3 +1,5 @@
+/** @format */
+
 import {
   Table,
   TableBody,
@@ -5,14 +7,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Edit, Trash2, Download } from 'lucide-react';
-import { BookingWithDetails } from '@/types';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Edit, Trash2, Download } from "lucide-react";
+import { BookingWithDetails } from "@/types";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface BookingsTableProps {
   bookings: BookingWithDetails[];
@@ -23,49 +25,54 @@ interface BookingsTableProps {
 
 const getStatusColor = (status: string) => {
   const statusMap: Record<string, string> = {
-    confirmed: 'bg-green-100 text-green-800',
-    pending: 'bg-yellow-100 text-yellow-800',
-    completed: 'bg-blue-100 text-blue-800',
-    cancelled: 'bg-red-100 text-red-800',
+    confirmed: "bg-green-100 text-green-800",
+    pending: "bg-yellow-100 text-yellow-800",
+    completed: "bg-blue-100 text-blue-800",
+    cancelled: "bg-red-100 text-red-800",
   };
-  return statusMap[status] || 'bg-gray-100 text-gray-800';
+  return statusMap[status] || "bg-gray-100 text-gray-800";
 };
 
 const getStatusLabel = (status: string) => {
   const statusMap: Record<string, string> = {
-    confirmed: 'Confirmé',
-    pending: 'En attente',
-    completed: 'Terminé',
-    cancelled: 'Annulé',
+    confirmed: "Confirmé",
+    pending: "En attente",
+    completed: "Terminé",
+    cancelled: "Annulé",
   };
   return statusMap[status] || status;
 };
 
 const getServiceColor = (serviceName: string) => {
-  if (serviceName.includes('1 Zone')) return 'bg-blue-100 text-blue-800';
-  if (serviceName.includes('2 Zones')) return 'bg-green-100 text-green-800';
-  if (serviceName.includes('3 Zones')) return 'bg-purple-100 text-purple-800';
-  if (serviceName.includes('Full Body')) return 'bg-red-100 text-red-800';
-  return 'bg-gray-100 text-gray-800';
+  if (serviceName.includes("1 Zone")) return "bg-blue-100 text-blue-800";
+  if (serviceName.includes("2 Zones")) return "bg-green-100 text-green-800";
+  if (serviceName.includes("3 Zones")) return "bg-purple-100 text-purple-800";
+  if (serviceName.includes("Full Body")) return "bg-red-100 text-red-800";
+  return "bg-gray-100 text-gray-800";
 };
 
 const calculateTimeLeft = (startTime: string) => {
   const now = new Date();
   const appointmentTime = new Date(startTime);
   const diffMs = appointmentTime.getTime() - now.getTime();
-  
-  if (diffMs < 0) return 'Passé';
-  
+
+  if (diffMs < 0) return "Passé";
+
   const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
   const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  
-  if (days > 0) return `${days} jour${days > 1 ? 's' : ''}`;
+
+  if (days > 0) return `${days} jour${days > 1 ? "s" : ""}`;
   if (hours > 0) return `${hours}h ${minutes}min`;
   return `${minutes}min`;
 };
 
-export function BookingsTable({ bookings, onEdit, onDelete, onExport }: BookingsTableProps) {
+export function BookingsTable({
+  bookings,
+  onEdit,
+  onDelete,
+  onExport,
+}: BookingsTableProps) {
   if (bookings.length === 0) {
     return (
       <Card>
@@ -87,18 +94,18 @@ export function BookingsTable({ bookings, onEdit, onDelete, onExport }: Bookings
                 <TableHead>SERVICE</TableHead>
                 <TableHead>DATE/HEURE</TableHead>
                 <TableHead>TIME LEFT</TableHead>
-                <TableHead>AGENT</TableHead>
+                {/* <TableHead>AGENT</TableHead> */}
                 <TableHead>CLIENT</TableHead>
-                <TableHead>LOCATION</TableHead>
+                {/* <TableHead>LOCATION</TableHead> */}
                 <TableHead>STATUT</TableHead>
-                <TableHead>ACTIONS</TableHead>
+                {/* <TableHead>ACTIONS</TableHead> */}
               </TableRow>
             </TableHeader>
             <TableBody>
               {bookings.map((booking) => (
                 <TableRow key={booking.id}>
                   <TableCell className="font-medium">
-                    #BK{booking.id.toString().padStart(3, '0')}
+                    #BK{booking.id.toString().padStart(3, "0")}
                   </TableCell>
                   <TableCell>
                     <Badge className={getServiceColor(booking.service.name)}>
@@ -107,18 +114,23 @@ export function BookingsTable({ bookings, onEdit, onDelete, onExport }: Bookings
                   </TableCell>
                   <TableCell>
                     <div>
-                      {format(new Date(booking.startTime), 'dd MMM yyyy', { locale: fr })}
+                      {format(new Date(booking.startTime), "dd MMM yyyy", {
+                        locale: fr,
+                      })}
                     </div>
                     <div className="text-sm text-gray-500">
-                      {format(new Date(booking.startTime), 'HH:mm', { locale: fr })}
+                      {format(new Date(booking.startTime), "HH:mm", {
+                        locale: fr,
+                      })}
                     </div>
                   </TableCell>
                   <TableCell className="font-medium text-green-600">
                     {calculateTimeLeft(booking.startTime)}
                   </TableCell>
-                  <TableCell>
-                    {booking.agent.displayName || `${booking.agent.firstName} ${booking.agent.lastName}`}
-                  </TableCell>
+                  {/* <TableCell>
+                    {booking.agent.displayName ||
+                      `${booking.agent.firstName} ${booking.agent.lastName}`}
+                  </TableCell> */}
                   <TableCell>
                     <div>
                       <div className="font-medium">
@@ -129,32 +141,28 @@ export function BookingsTable({ bookings, onEdit, onDelete, onExport }: Bookings
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>
-                    {booking.location.name}
-                  </TableCell>
+                  {/* <TableCell>{booking.}</TableCell> */}
                   <TableCell>
                     <Badge className={getStatusColor(booking.status)}>
                       {getStatusLabel(booking.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  {/* <TableCell>
                     <div className="flex space-x-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
-                        onClick={() => onEdit(booking)}
-                      >
+                        onClick={() => onEdit(booking)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="icon"
-                        onClick={() => onDelete(booking.id)}
-                      >
+                        onClick={() => onDelete(booking.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>

@@ -24,7 +24,7 @@ import { updateService, getServiceById } from "./services";
 import { LocationWithAgents } from "@/types";
 
 // CREATE: Add a new location
-export async function addLocation(data: LocationWithAgents) {
+export async function addLocation(data: LocationWithAgents | any) {
   const {
     name,
     address,
