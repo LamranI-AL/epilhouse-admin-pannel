@@ -6,13 +6,13 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDtohNEmKNXHT8GE9-mm9mRJepyOweD_po",
-  authDomain: "epilhouse-1a923.firebaseapp.com",
-  projectId: "epilhouse-1a923",
-  storageBucket: "epilhouse-1a923.firebasestorage.app",
-  messagingSenderId: "89507374295",
-  appId: "1:89507374295:web:4b52394cb50abeef6d7c92",
-  measurementId: "G-EE94QKSZ38",
+  apiKey: "AIzaSyCjF3lHQt0kmr5dILSb4LW67HfKLbd99AM",
+  authDomain: "epilhouse-ef35c.firebaseapp.com",
+  projectId: "epilhouse-ef35c",
+  storageBucket: "epilhouse-ef35c.firebasestorage.app",
+  messagingSenderId: "921590450829",
+  appId: "1:921590450829:web:575c03c121aa04c3df30c4",
+  measurementId: "G-J197ER0NLR",
 };
 
 const app = initializeApp(firebaseConfig);

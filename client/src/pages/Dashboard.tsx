@@ -54,7 +54,7 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       setBookings(quickBookings);
     } catch (error) {
       console.error("Erreur lors du chargement des données:", error);
@@ -65,7 +65,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [bookings]);
 
   // Calculs des statistiques
   const totalBookings = bookings.length;

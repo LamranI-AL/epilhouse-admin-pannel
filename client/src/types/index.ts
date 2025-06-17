@@ -26,6 +26,7 @@ export interface TimeSlot {
 export interface ServiceWithAgents {
   id: string;
   name: string;
+  categoryId? : string
   description: string | null;
   subServices: Array<{
     id: string;
@@ -212,14 +213,14 @@ export interface ClientWithBookings {
   } | null;
 }
 
-export interface SubService {
-  id: string;
-  name: string;
-  normalPrice: number;
-  discountPrice?: number;
-  duration: number;
-  description?: string;
-}
+// export interface SubService {
+//   id: string;
+//   name: string;
+//   normalPrice: number;
+//   discountPrice?: number;
+//   duration: number;
+//   description?: string;
+// }
 
 export interface ServiceCategory {
   id: string;
@@ -231,4 +232,37 @@ export interface ServiceCategory {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  color: string;
+  icon?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  description?: string;
+  categoryId: string; // Référence à la catégorie parent
+  color?: string;
+  isActive: boolean;
+  subServices: SubService[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubService {
+  id: string;
+  name: string;
+  description?: string;
+  normalPrice: number;
+  discountPrice?: number;
+  duration?: number; // en minutes
+  isActive: boolean;
 }

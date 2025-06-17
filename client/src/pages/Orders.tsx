@@ -564,7 +564,7 @@ export default function EnhancedReservationTable() {
                 <strong>Rôle:</strong> {userRole}
               </span>
               <span>
-                <strong>Location:</strong>{" "}
+                <strong>Center ID:</strong>{" "}
                 {agentData?.assignedLocationId || "Non assignée"}
               </span>
               <span>

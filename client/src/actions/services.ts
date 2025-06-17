@@ -702,3 +702,123 @@ export async function validateSubServiceIds(subServiceIds: string[]) {
     };
   }
 }
+
+import { Service } from "@/types";
+
+const COLLECTION_NAME = "services";
+
+// export const getAllServices = async () => {
+//   try {
+//     const q = query(
+//       collection(db, COLLECTION_NAME),
+//       orderBy('name', 'asc')
+//     );
+//     const querySnapshot = await getDocs(q);
+
+//     const services: Service[] = [];
+//     querySnapshot.forEach((doc) => {
+//       services.push({
+//         id: doc.id,
+//         ...doc.data(),
+//         createdAt: doc.data().createdAt?.toDate(),
+//         updatedAt: doc.data().updatedAt?.toDate(),
+//       } as Service);
+//     });
+
+//     return { success: true, services };
+//   } catch (error) {
+//     console.error('Error fetching services:', error);
+//     return { success: false, error: 'Erreur lors du chargement des services' };
+//   }
+// };
+
+// export const getServicesByCategory = async (categoryId: string) => {
+//   try {
+//     const q = query(
+//       collection(db, COLLECTION_NAME),
+//       where('categoryId', '==', categoryId),
+//       orderBy('name', 'asc')
+//     );
+//     const querySnapshot = await getDocs(q);
+
+//     const services: Service[] = [];
+//     querySnapshot.forEach((doc) => {
+//       services.push({
+//         id: doc.id,
+//         ...doc.data(),
+//         createdAt: doc.data().createdAt?.toDate(),
+//         updatedAt: doc.data().updatedAt?.toDate(),
+//       } as Service);
+//     });
+
+//     return { success: true, services };
+//   } catch (error) {
+//     console.error('Error fetching services by category:', error);
+//     return { success: false, error: 'Erreur lors du chargement des services' };
+//   }
+// };
+
+// export const getServiceById = async (id: string) => {
+//   try {
+//     const docRef = doc(db, COLLECTION_NAME, id);
+//     const docSnap = await getDoc(docRef);
+
+//     if (docSnap.exists()) {
+//       const service = {
+//         id: docSnap.id,
+//         ...docSnap.data(),
+//         createdAt: docSnap.data().createdAt?.toDate(),
+//         updatedAt: docSnap.data().updatedAt?.toDate(),
+//       } as Service;
+
+//       return { success: true, service };
+//     } else {
+//       return { success: false, error: 'Service non trouvé' };
+//     }
+//   } catch (error) {
+//     console.error('Error fetching service:', error);
+//     return { success: false, error: 'Erreur lors du chargement du service' };
+//   }
+// };
+
+// export const addService = async (serviceData: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>) => {
+//   try {
+//     const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+//       ...serviceData,
+//       createdAt: serverTimestamp(),
+//       updatedAt: serverTimestamp(),
+//     });
+
+//     return { success: true, id: docRef.id };
+//   } catch (error) {
+//     console.error('Error adding service:', error);
+//     return { success: false, error: 'Erreur lors de la création du service' };
+//   }
+// };
+
+// export const updateService = async (id: string, serviceData: Partial<Service>) => {
+//   try {
+//     const docRef = doc(db, COLLECTION_NAME, id);
+//     await updateDoc(docRef, {
+//       ...serviceData,
+//       updatedAt: serverTimestamp(),
+//     });
+
+//     return { success: true };
+//   } catch (error) {
+//     console.error('Error updating service:', error);
+//     return { success: false, error: 'Erreur lors de la mise à jour du service' };
+//   }
+// };
+
+// export const deleteService = async (id: string) => {
+//   try {
+//     const docRef = doc(db, COLLECTION_NAME, id);
+//     await deleteDoc(docRef);
+
+//     return { success: true };
+//   } catch (error) {
+//     console.error('Error deleting service:', error);
+//     return { success: false, error: 'Erreur lors de la suppression du service' };
+//   }
+// };

@@ -31,13 +31,13 @@ const resourcesNavigation = [
   { name: "Coupons", href: "/coupons", icon: Ticket },
 ];
 
-const settingsNavigation = [
-  { name: "Paramètres", href: "/settings", icon: Cog },
-  { name: "Automation", href: "/automation", icon: Bot },
-  { name: "Integrations", href: "/integrations", icon: LinkIcon },
-  { name: "Form Fields", href: "/form-fields", icon: FormInput },
-  { name: "Add-ons", href: "/add-ons", icon: Plus },
-];
+// const settingsNavigation = [
+//   { name: "Paramètres", href: "/settings", icon: Cog },
+//   { name: "Automation", href: "/automation", icon: Bot },
+//   { name: "Integrations", href: "/integrations", icon: LinkIcon },
+//   { name: "Form Fields", href: "/form-fields", icon: FormInput },
+//   { name: "Add-ons", href: "/add-ons", icon: Plus },
+// ];
 
 export function Sidebar() {
   const [location] = useLocation();
@@ -50,7 +50,7 @@ export function Sidebar() {
           { name: "Calendrier", href: "/calendar", icon: Calendar },
           { name: "Rendez-vous", href: "/bookings", icon: ClipboardList },
           { name: "Réservations", href: "/orders", icon: ShoppingCart },
-          { name: "Paiements", href: "/payments", icon: CreditCard },
+          // { name: "Paiements", href: "/payments", icon: CreditCard },
           { name: "Clients", href: "/clients", icon: Users },
         ]
       : [
@@ -68,7 +68,7 @@ export function Sidebar() {
             <img
               src={MonIcone}
               alt="Description"
-              width="90"
+              width="90 "
               height="50"
             />
             {/* </div> */}
@@ -138,7 +138,7 @@ export function Sidebar() {
               </ul>
             </li>
 
-            <li>
+            {/* <li>
               <div className="text-xs font-semibold leading-6 text-gray-400 uppercase tracking-wide">
                 PARAMÈTRES
               </div>
@@ -167,7 +167,7 @@ export function Sidebar() {
                     );
                   })}
               </ul>
-            </li>
+            </li> */}
           </ul>
           {/* ajouter une div pour les infos de users  sick in buttom*/}
           <div className="text-xs font-semibold leading-6 text-gray-400 uppercase tracking-wide flex flex-col">

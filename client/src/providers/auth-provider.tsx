@@ -241,10 +241,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
       // Redirection selon le rôle
       switch (agentInfo.role) {
         case "superAdmin":
-          navigate("/admin/dashboard");
+          navigate("/");
           break;
         case "admin":
-          navigate("/admin");
+          navigate("/dashboard");
           break;
         case "user":
         default:
@@ -300,7 +300,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
             navigate("/");
             break;
           case "admin":
-            navigate("/");
+            navigate("/dashboard");
             break;
           case "user":
           default:
@@ -398,14 +398,14 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         // Redirection selon le rôle
         switch (agentInfo.role) {
           case "superAdmin":
-            navigate("/admin/dashboard");
+            navigate("/");
             break;
           case "admin":
-            navigate("/admin");
+            navigate("/dashboard");
             break;
           case "user":
           default:
-            navigate("/");
+            navigate("/login");
             break;
         }
       }

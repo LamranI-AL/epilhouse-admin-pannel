@@ -27,6 +27,7 @@ import { Loader2, LogIn, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/providers/auth-provider";
+import logo from "../../../attached_assets/logo.svg";
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -113,9 +114,9 @@ export default function Login() {
         <CardHeader className="text-center pb-2">
           <div className="flex justify-center mb-4">
             <img
-              src="/logo.png"
-              alt="Restaurant Logo"
-              className="h-12 w-12"
+              src={logo}
+              alt="Lbc Logo"
+              className="h-20 w-20"
             />
           </div>
           <CardTitle className="text-2xl font-bold">LBC</CardTitle>
@@ -203,6 +204,12 @@ export default function Login() {
               </Button>
             </form>
           </Form>
+          <div className="text-gray-400 text-sm ">
+            Super admin demo : super@gmail.com / super1234
+          </div>
+          <div className="text-gray-400 text-sm ">
+            Admin (agent) demo : ana@gmail.com / ana1234
+          </div>
         </CardContent>
       </Card>
     </div>

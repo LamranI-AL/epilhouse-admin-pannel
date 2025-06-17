@@ -1,6 +1,6 @@
 /** @format */
 
-// components/services/EditServiceDialog.tsx
+// components/services/EditServiceDialog.tsx - Compatible avec nouvelle architecture
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -13,16 +13,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Trash2, Euro, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { updateService } from "@/actions/services";
-import { ServiceCategory, SubService } from "@/types";
+import { Service, SubService, Category } from "@/types";
 
 interface EditServiceDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  service: ServiceCategory | null;
+  service: Service | null;
   onSuccess: () => void;
+  categories: Category[];
 }
 
 export default function EditServiceDialog({
@@ -30,6 +38,7 @@ export default function EditServiceDialog({
   onClose,
   service,
   onSuccess,
+  categories,
 }: EditServiceDialogProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -37,6 +46,7 @@ export default function EditServiceDialog({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    categoryId: "",
     color: "#3B82F6",
     isActive: true,
   });
@@ -48,10 +58,11 @@ export default function EditServiceDialog({
       setFormData({
         name: service.name,
         description: service.description || "",
-        color: service.color,
+        categoryId: service.categoryId,
+        color: service.color || "#3B82F6",
         isActive: service.isActive,
       });
-      setSubServices(service.subServices);
+      setSubServices(service.subServices || []);
     }
   }, [service, isOpen]);
 
@@ -69,6 +80,7 @@ export default function EditServiceDialog({
         discountPrice: undefined,
         duration: 30,
         description: "",
+        isActive: true,
       },
     ]);
   };
@@ -89,6 +101,15 @@ export default function EditServiceDialog({
     e.preventDefault();
     if (!service) return;
 
+    if (!formData.categoryId) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner une catégorie",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -107,14 +128,26 @@ export default function EditServiceDialog({
           description: "Service modifié avec succès",
         });
       } else {
-        toast({ title: "Erreur", description: result.error });
+        toast({
+          title: "Erreur",
+          description: result.error || "Erreur lors de la modification",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la modification:", error);
-      toast({ title: "Erreur", description: "Une erreur est survenue" });
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const getSelectedCategory = () => {
+    return categories.find((cat) => cat.id === formData.categoryId);
   };
 
   const predefinedColors = [
@@ -142,7 +175,7 @@ export default function EditServiceDialog({
         <form
           onSubmit={handleSubmit}
           className="space-y-6">
-          {/* Informations générales */}
+          {/* Informations générales - identique à AddServiceDialog */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Nom du service *</Label>
@@ -155,26 +188,34 @@ export default function EditServiceDialog({
             </div>
 
             <div>
-              <Label>Couleur</Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => updateField("color", e.target.value)}
-                  className="w-12 h-10 border rounded cursor-pointer"
-                />
-                <div className="flex space-x-1">
-                  {predefinedColors.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => updateField("color", color)}
-                      className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
-                      style={{ backgroundColor: color }}
-                    />
+              <Label>Catégorie *</Label>
+              <Select
+                value={formData.categoryId}
+                onValueChange={(value) => updateField("categoryId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
                   ))}
-                </div>
-              </div>
+                </SelectContent>
+              </Select>
+              {getSelectedCategory() && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Service classé dans "{getSelectedCategory()?.name}"
+                </p>
+              )}
             </div>
           </div>
 
@@ -188,7 +229,30 @@ export default function EditServiceDialog({
             />
           </div>
 
-          {/* Sous-services */}
+          <div>
+            <Label>Couleur du service (optionnel)</Label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => updateField("color", e.target.value)}
+                className="w-12 h-10 border rounded cursor-pointer"
+              />
+              <div className="flex space-x-1">
+                {predefinedColors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => updateField("color", color)}
+                    className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sous-services - logique identique */}
           <div>
             <div className="flex items-center justify-between mb-4">
               <Label className="text-lg">Sous-services et Tarifs</Label>
@@ -294,7 +358,7 @@ export default function EditServiceDialog({
                       </div>
                     </div>
 
-                    <div className="md:col-span-2">
+                    <div>
                       <Label>Durée (minutes) *</Label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -314,6 +378,16 @@ export default function EditServiceDialog({
                           placeholder="30"
                         />
                       </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={subService.isActive}
+                        onCheckedChange={(checked) =>
+                          updateSubService(index, "isActive", checked)
+                        }
+                      />
+                      <Label>Sous-service actif</Label>
                     </div>
                   </div>
                 </div>
@@ -339,7 +413,7 @@ export default function EditServiceDialog({
             </Button>
             <Button
               type="submit"
-              disabled={loading}>
+              disabled={loading || !formData.categoryId}>
               {loading ? "Modification..." : "Modifier le service"}
             </Button>
           </div>

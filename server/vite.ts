@@ -1,3 +1,5 @@
+/** @format */
+
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";
@@ -36,7 +38,7 @@ export async function setupVite(app: Express, server: Server) {
         process.exit(1);
       },
     },
-    server: serverOptions,
+    server: serverOptions as any,
     appType: "custom",
   });
 
@@ -52,7 +54,6 @@ export async function setupVite(app: Express, server: Server) {
         "index.html",
       );
 
-      // always reload the index.html file from disk incase it changes
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
@@ -68,7 +69,8 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "public");
+  // Corriger le chemin vers dist/public
+  const distPath = path.resolve("dist/public");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
@@ -76,10 +78,32 @@ export function serveStatic(app: Express) {
     );
   }
 
+  // Servir les assets avec les bons MIME types
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), {
+      setHeaders: (res, filePath) => {
+        if (filePath.endsWith(".js") || filePath.endsWith(".mjs")) {
+          res.setHeader(
+            "Content-Type",
+            "application/javascript; charset=utf-8",
+          );
+        } else if (filePath.endsWith(".css")) {
+          res.setHeader("Content-Type", "text/css; charset=utf-8");
+        }
+      },
+    }),
+  );
+
+  // Servir les autres fichiers statiques
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
+  // SPA fallback - important de vérifier que ce n'est pas une route API
+  app.use("*", (req, res) => {
+    // Ne pas servir index.html pour les routes API
+    if (req.originalUrl.startsWith("/api")) {
+      return res.status(404).json({ message: "API route not found" });
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }

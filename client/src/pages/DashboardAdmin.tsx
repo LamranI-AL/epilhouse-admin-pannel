@@ -40,6 +40,7 @@ import {
 import { useAuth } from "@/providers/auth-provider";
 import { useBooking } from "@/hooks/use-booking";
 import { QuickReservation } from "@/types";
+import Bookings from "./Bookings";
 
 const AdminDashboard = () => {
   const [bookings, setBookings] = useState<QuickReservation[]>([]);
@@ -54,7 +55,7 @@ const AdminDashboard = () => {
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
       const filteredBookings = quickBookings.filter(
         (booking: any) => booking?.agent?.id === currentUser?.uid,
       );
@@ -68,7 +69,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [Bookings]);
 
   // Calculs des statistiques
   const totalBookings = bookings.length;

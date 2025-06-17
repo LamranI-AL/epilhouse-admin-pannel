@@ -1,6 +1,6 @@
 /** @format */
 
-// components/services/AddServiceDialog.tsx
+// components/services/AddServiceDialog.tsx - Compatible avec nouvelle architecture
 import React, { useState } from "react";
 import {
   Dialog,
@@ -13,21 +13,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Trash2, Euro, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { addService } from "@/actions/services";
-import { ServiceCategory, SubService } from "@/types";
+import { Category, SubService } from "@/types";
 
 interface AddServiceDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  categories: Category[];
 }
 
 export default function AddServiceDialog({
   isOpen,
   onClose,
   onSuccess,
+  categories,
 }: AddServiceDialogProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -35,6 +44,7 @@ export default function AddServiceDialog({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    categoryId: "",
     color: "#3B82F6",
     isActive: true,
   });
@@ -46,6 +56,7 @@ export default function AddServiceDialog({
       discountPrice: undefined,
       duration: 30,
       description: "",
+      isActive: true,
     },
   ]);
 
@@ -62,6 +73,7 @@ export default function AddServiceDialog({
         discountPrice: undefined,
         duration: 30,
         description: "",
+        isActive: true,
       },
     ]);
   };
@@ -80,6 +92,16 @@ export default function AddServiceDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!formData.categoryId) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner une catégorie",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -91,7 +113,7 @@ export default function AddServiceDialog({
         })),
       };
 
-      const result = await addService(serviceData as any);
+      const result = await addService(serviceData);
 
       if (result.success) {
         onSuccess();
@@ -100,31 +122,48 @@ export default function AddServiceDialog({
           title: "Succès",
           description: "Service créé avec succès",
         });
-        // Reset form
-        setFormData({
-          name: "",
-          description: "",
-          color: "#3B82F6",
-          isActive: true,
-        });
-        setSubServices([
-          {
-            name: "",
-            normalPrice: 0,
-            discountPrice: undefined,
-            duration: 30,
-            description: "",
-          },
-        ]);
+        resetForm();
       } else {
-        toast({ title: "Erreur", description: result.error });
+        toast({
+          title: "Erreur",
+          description: result.error || "Erreur lors de la création",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Erreur lors de la création:", error);
-      toast({ title: "Erreur", description: "Une erreur est survenue" });
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      categoryId: "",
+      color: "#3B82F6",
+      isActive: true,
+    });
+    setSubServices([
+      {
+        name: "",
+        normalPrice: 0,
+        discountPrice: undefined,
+        duration: 30,
+        description: "",
+        isActive: true,
+      },
+    ]);
+  };
+
+  const getSelectedCategory = () => {
+    return categories.find((cat) => cat.id === formData.categoryId);
   };
 
   const predefinedColors = [
@@ -163,26 +202,37 @@ export default function AddServiceDialog({
             </div>
 
             <div>
-              <Label>Couleur</Label>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="color"
-                  value={formData.color}
-                  onChange={(e) => updateField("color", e.target.value)}
-                  className="w-12 h-10 border rounded cursor-pointer"
-                />
-                <div className="flex space-x-1">
-                  {predefinedColors.map((color) => (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => updateField("color", color)}
-                      className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
+              <Label>Catégorie *</Label>
+              <Select
+                value={formData.categoryId}
+                onValueChange={(value) => updateField("categoryId", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une catégorie" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories
+                    .filter((cat) => cat.isActive)
+                    .map((category) => (
+                      <SelectItem
+                        key={category.id}
+                        value={category.id}>
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          />
+                          {category.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {getSelectedCategory() && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Ce service sera classé dans la catégorie "
+                  {getSelectedCategory()?.name}"
+                </p>
+              )}
             </div>
           </div>
 
@@ -194,6 +244,32 @@ export default function AddServiceDialog({
               placeholder="Description du service..."
               rows={3}
             />
+          </div>
+
+          <div>
+            <Label>Couleur du service (optionnel)</Label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={formData.color}
+                onChange={(e) => updateField("color", e.target.value)}
+                className="w-12 h-10 border rounded cursor-pointer"
+              />
+              <div className="flex space-x-1">
+                {predefinedColors.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => updateField("color", color)}
+                    className="w-6 h-6 rounded border-2 border-gray-300 hover:border-gray-500"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Si non définie, la couleur de la catégorie sera utilisée
+            </p>
           </div>
 
           {/* Sous-services */}
@@ -302,7 +378,7 @@ export default function AddServiceDialog({
                       </div>
                     </div>
 
-                    <div className="md:col-span-2">
+                    <div>
                       <Label>Durée (minutes) *</Label>
                       <div className="relative">
                         <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -323,13 +399,23 @@ export default function AddServiceDialog({
                         />
                       </div>
                     </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={subService.isActive}
+                        onCheckedChange={(checked) =>
+                          updateSubService(index, "isActive", checked)
+                        }
+                      />
+                      <Label>Sous-service actif</Label>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Statut actif */}
+          {/* Statut actif du service */}
           <div className="flex items-center space-x-2">
             <Switch
               checked={formData.isActive}
@@ -347,7 +433,7 @@ export default function AddServiceDialog({
             </Button>
             <Button
               type="submit"
-              disabled={loading}>
+              disabled={loading || !formData.categoryId}>
               {loading ? "Création..." : "Créer le service"}
             </Button>
           </div>
