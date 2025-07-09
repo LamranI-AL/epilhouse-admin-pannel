@@ -328,7 +328,7 @@ export function AgentForm({ agent, onSubmit, onCancel }: AgentFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="user">Utilisateur</SelectItem>
+                          {/* <SelectItem value="user">Utilisateur</SelectItem> */}
                           <SelectItem value="admin">Administrateur</SelectItem>
                           <SelectItem value="superAdmin">
                             Super Administrateur
