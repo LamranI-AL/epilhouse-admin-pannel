@@ -20,6 +20,7 @@ import Coupons from "@/pages/Coupons";
 import AuthProvider from "./providers/auth-provider";
 import Login from "./pages/login";
 import DashboardAdmin from "./pages/DashboardAdmin";
+import BookingActivityJournal from "./pages/Archive";
 
 function Router() {
   return (
@@ -112,6 +113,10 @@ function Router() {
         <Route
           path="/dashboard"
           component={DashboardAdmin}
+        />
+        <Route
+          path="/Archive"
+          component={BookingActivityJournal}
         />
         <Route component={NotFound} />
       </Switch>

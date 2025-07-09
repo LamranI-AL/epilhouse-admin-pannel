@@ -204,12 +204,6 @@ export default function Login() {
               </Button>
             </form>
           </Form>
-          <div className="text-gray-400 text-sm ">
-            Super admin demo : super@gmail.com / super1234
-          </div>
-          <div className="text-gray-400 text-sm ">
-            Admin (agent) demo : ana@gmail.com / ana1234
-          </div>
         </CardContent>
       </Card>
     </div>

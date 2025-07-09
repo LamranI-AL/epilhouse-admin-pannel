@@ -22,6 +22,7 @@ import { QuickReservation } from "@/types";
 // import ServiceDetails from "./ServiceByReservations";
 import ServiceDetails from "@/pages/ServiceByReservations";
 import LocationDetails from "@/components/location/detailsById";
+import { useAuth } from "@/providers/auth-provider";
 
 interface BookingModalProps {
   booking: QuickReservation;
@@ -40,6 +41,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
   onDelete,
   loading,
 }) => {
+  const { currentUser, logout, userRole, agentData } = useAuth();
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -233,46 +235,46 @@ const BookingModal: React.FC<BookingModalProps> = ({
               </div>
             )}
           </div>
-
-          {/* Actions */}
-          <div className="mt-6 flex justify-end space-x-3">
-            {booking.status === "pending" && (
-              <>
-                <button
-                  onClick={() => {
-                    onAccept(booking.id);
-                    onClose();
-                  }}
-                  disabled={loading}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center disabled:opacity-50">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Confirmer
-                </button>
-                <button
-                  onClick={() => {
-                    onReject(booking.id);
-                    onClose();
-                  }}
-                  disabled={loading}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center disabled:opacity-50">
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Annuler
-                </button>
-              </>
-            )}
-            <button
-              onClick={() => onDelete(booking.id)}
-              disabled={loading}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center disabled:opacity-50">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Supprimer
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-              Fermer
-            </button>
-          </div>
+          {userRole === "superAdmin" && (
+            <div className="mt-6 flex justify-end space-x-3">
+              {booking.status === "pending" && (
+                <>
+                  <button
+                    onClick={() => {
+                      onAccept(booking.id);
+                      onClose();
+                    }}
+                    disabled={loading}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center disabled:opacity-50">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Confirmer
+                  </button>
+                  <button
+                    onClick={() => {
+                      onReject(booking.id);
+                      onClose();
+                    }}
+                    disabled={loading}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center disabled:opacity-50">
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Annuler
+                  </button>
+                </>
+              )}
+              <button
+                onClick={() => onDelete(booking.id)}
+                disabled={loading}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors flex items-center disabled:opacity-50">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Supprimer
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                Fermer
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

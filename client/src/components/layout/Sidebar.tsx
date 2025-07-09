@@ -28,7 +28,7 @@ const resourcesNavigation = [
   { name: "Services", href: "/services", icon: Settings },
   { name: "Locations", href: "/locations", icon: MapPin },
   { name: "Agents", href: "/agents", icon: UserRoundCheck },
-  { name: "Coupons", href: "/coupons", icon: Ticket },
+  { name: "Historique des actions", href: "/Archive", icon: Ticket },
 ];
 
 // const settingsNavigation = [
@@ -48,8 +48,13 @@ export function Sidebar() {
       ? [
           { name: "Tableau de bord", href: "/", icon: BarChart3 },
           { name: "Calendrier", href: "/calendar", icon: Calendar },
-          { name: "Rendez-vous", href: "/bookings", icon: ClipboardList },
-          { name: "Réservations", href: "/orders", icon: ShoppingCart },
+          {
+            name: "Réservations",
+            href: "/bookings",
+            icon: ShoppingCart,
+          },
+          { name: "Rendez-vous", href: "/orders", icon: ClipboardList },
+
           // { name: "Paiements", href: "/payments", icon: CreditCard },
           { name: "Clients", href: "/clients", icon: Users },
         ]

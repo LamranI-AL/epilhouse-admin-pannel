@@ -10,7 +10,7 @@ type Props = {
   booking: any;
 };
 
-interface ServiceDetail {
+export interface ServiceDetail {
   serviceName: string;
   subServiceName: string;
   subServiceDescription?: string;
@@ -123,11 +123,11 @@ function ServiceDetails({ booking }: Props) {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="">
       {serviceDetails.map((detail, index) => (
         <div
           key={index}
-          className="bg-white border border-gray-200 rounded-lg p-4">
+          className="bg-white border border-gray-200 rounded-lg">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {/* Catégorie */}
@@ -151,7 +151,7 @@ function ServiceDetails({ booking }: Props) {
                 </p>
                 {detail.subServiceDescription && (
                   <p className="text-xs text-gray-500 mt-1">
-                    {detail.subServiceDescription}
+                    {detail.duration}
                   </p>
                 )}
               </div>

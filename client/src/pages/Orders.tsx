@@ -30,6 +30,15 @@ import {
   Settings,
   Shield,
   ShieldCheck,
+  SlidersHorizontal,
+  FilterX,
+  CalendarIcon,
+  Loader2,
+  RotateCcw,
+  Archive,
+  Star,
+  TrendingUp,
+  Users,
 } from "lucide-react";
 import { QuickReservation } from "@/types";
 import { useBooking } from "@/hooks/use-booking";
@@ -44,29 +53,57 @@ import ServiceDetails from "./ServiceByReservations";
 import LocationDetails from "@/components/location/detailsById";
 import { useAuth } from "@/providers/auth-provider";
 
-export default function EnhancedReservationTable() {
+// Interface pour les filtres avancés
+interface AdvancedFilters {
+  service: string;
+  dateFrom: string;
+  dateTo: string;
+  timeFrom: string;
+  timeTo: string;
+  agent: string;
+  location: string;
+  client: string;
+  status: string;
+  paymentStatus: string;
+  amountMin: string;
+  amountMax: string;
+}
+
+export default function EnhancedReservationTableUX() {
   const { quickBookings } = useBooking();
   const { agentData, currentUser, userRole } = useAuth();
 
-  // State pour les données et filtres
+  // États principaux
   const [reservations, setReservations] = useState<QuickReservation[]>([]);
   const [filteredData, setFilteredData] = useState<QuickReservation[]>([]);
-  const [searchFilter, setSearchFilter] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // State pour la pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalPages, setTotalPages] = useState(0);
+  // États pour les filtres basiques
+  const [searchFilter, setSearchFilter] = useState("");
+  const [quickSearchFocus, setQuickSearchFocus] = useState(false);
 
-  // State pour les actions
+  // États pour les filtres avancés
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
+    service: "",
+    dateFrom: "",
+    dateTo: "",
+    timeFrom: "",
+    timeTo: "",
+    agent: "",
+    location: "",
+    client: "",
+    status: "",
+    paymentStatus: "",
+    amountMin: "",
+    amountMax: "",
+  });
+
+  // États pour les actions
   const [selectedReservations, setSelectedReservations] = useState<string[]>(
     [],
   );
-  const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reservationToDelete, setReservationToDelete] = useState<string | null>(
     null,
@@ -75,57 +112,53 @@ export default function EnhancedReservationTable() {
   const [selectedReservation, setSelectedReservation] =
     useState<QuickReservation | null>(null);
 
-  // Fonction pour récupérer les réservations selon le rôle
+  // États pour la pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalPages, setTotalPages] = useState(0);
+
+  // États pour l'UX
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const statusOptions = [
+    "Show All",
+    "En attente",
+    "Confirmé",
+    "Annulé",
+    "Approuvé",
+  ];
+
+  const paymentStatusOptions = ["Show All", "Not Paid", "Paid", "Pending"];
+
+  // Récupération des réservations selon le rôle
   const fetchReservations = async () => {
     setInitialLoading(true);
     try {
-      console.log("Récupération des réservations...");
-      console.log("UserRole:", userRole);
-      console.log("AgentData:", agentData);
-
       const result = await getAllQuickBookings();
+      console.log(result);
 
       if (result.success) {
         let allReservations = result.quickBookings || [];
-        console.log("Total réservations récupérées:", allReservations.length);
+        console.log(allReservations);
+        console.log(userRole);
 
         // Filtrer selon le rôle utilisateur
         if (userRole === "admin" && agentData?.assignedLocationId) {
-          console.log(
-            "Admin détecté - Filtrage par location:",
-            agentData.assignedLocationId,
-          );
-
           allReservations = allReservations.filter(
             (reservation: QuickReservation) =>
               reservation.locationId === agentData.assignedLocationId,
           );
-
-          console.log(
-            "Réservations après filtrage admin:",
-            allReservations.length,
-          );
         } else if (userRole === "superAdmin") {
-          console.log(
-            "SuperAdmin détecté - Affichage de toutes les réservations",
-          );
-          // Pas de filtrage pour superAdmin
+          // SuperAdmin voit tout
         } else if (userRole === "admin" && !agentData?.assignedLocationId) {
-          console.log(
-            "Admin sans assignedLocationId - Aucune réservation affichée",
-          );
           allReservations = [];
         } else {
-          console.log("Rôle non reconnu ou non autorisé");
           allReservations = [];
         }
 
         setReservations(allReservations);
       } else {
-        console.error(
-          "Erreur lors de la récupération des réservations:",
-          result,
-        );
         setReservations([]);
       }
     } catch (error) {
@@ -136,26 +169,32 @@ export default function EnhancedReservationTable() {
     }
   };
 
-  // Charger les données selon le rôle et les permissions
+  // Actualisation manuelle
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchReservations();
+    setIsRefreshing(false);
+  };
+
   useEffect(() => {
+    console.log(userRole);
+    console.log(agentData?.assignedLocationId);
     if (
       userRole &&
       (userRole === "superAdmin" ||
         (userRole === "admin" && agentData?.assignedLocationId))
     ) {
+      console.log("ici a fitch");
       fetchReservations();
     } else if (userRole === "admin" && !agentData?.assignedLocationId) {
-      console.log("Admin sans assignedLocationId - Pas de chargement");
       setInitialLoading(false);
       setReservations([]);
     } else if (userRole) {
-      console.log("Rôle détecté mais non autorisé:", userRole);
       setInitialLoading(false);
       setReservations([]);
     }
   }, [userRole, agentData?.assignedLocationId]);
 
-  // Utiliser les données du hook si disponibles (pour compatibilité)
   useEffect(() => {
     if (quickBookings && !userRole) {
       setReservations(quickBookings);
@@ -163,7 +202,7 @@ export default function EnhancedReservationTable() {
     }
   }, [quickBookings, userRole]);
 
-  // Appliquer les filtres et la pagination
+  // Application des filtres avec compteur
   useEffect(() => {
     let filtered = reservations.filter((r) => {
       const matchesSearch =
@@ -171,31 +210,79 @@ export default function EnhancedReservationTable() {
         r.clientLastName.toLowerCase().includes(searchFilter.toLowerCase()) ||
         r.clientEmail.toLowerCase().includes(searchFilter.toLowerCase());
 
-      const matchesLocation =
-        !locationFilter || r.locationId === locationFilter;
-      const matchesStatus = !statusFilter || r.status === statusFilter;
+      const matchesAdvancedDateFrom =
+        !advancedFilters.dateFrom ||
+        new Date(r.selectedDate) >= new Date(advancedFilters.dateFrom);
 
-      return matchesSearch && matchesLocation && matchesStatus;
+      const matchesAdvancedDateTo =
+        !advancedFilters.dateTo ||
+        new Date(r.selectedDate) <= new Date(advancedFilters.dateTo);
+
+      const matchesAdvancedTimeFrom =
+        !advancedFilters.timeFrom || r.selectedTime >= advancedFilters.timeFrom;
+
+      const matchesAdvancedTimeTo =
+        !advancedFilters.timeTo || r.selectedTime <= advancedFilters.timeTo;
+
+      const matchesAdvancedClient =
+        !advancedFilters.client ||
+        `${r.clientFirstName} ${r.clientLastName}`
+          .toLowerCase()
+          .includes(advancedFilters.client.toLowerCase());
+
+      const matchesAdvancedStatus =
+        !advancedFilters.status ||
+        advancedFilters.status === "Show All" ||
+        r.status === advancedFilters.status;
+
+      return (
+        matchesSearch &&
+        matchesAdvancedDateFrom &&
+        matchesAdvancedDateTo &&
+        matchesAdvancedTimeFrom &&
+        matchesAdvancedTimeTo &&
+        matchesAdvancedClient &&
+        matchesAdvancedStatus
+      );
     });
+
+    // Compter les filtres actifs
+    const activeCount =
+      Object.values(advancedFilters).filter(
+        (value) => value && value !== "Show All",
+      ).length + (searchFilter ? 1 : 0);
+    setActiveFiltersCount(activeCount);
 
     // Calculer la pagination
     const total = Math.ceil(filtered.length / pageSize);
     setTotalPages(total);
 
-    // Appliquer la pagination
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
     const paginated = filtered.slice(startIndex, endIndex);
 
     setFilteredData(paginated);
-  }, [
-    reservations,
-    searchFilter,
-    locationFilter,
-    statusFilter,
-    currentPage,
-    pageSize,
-  ]);
+  }, [reservations, searchFilter, advancedFilters, currentPage, pageSize]);
+
+  // Fonction pour réinitialiser tous les filtres
+  const resetAllFilters = () => {
+    setSearchFilter("");
+    setAdvancedFilters({
+      service: "",
+      dateFrom: "",
+      dateTo: "",
+      timeFrom: "",
+      timeTo: "",
+      agent: "",
+      location: "",
+      client: "",
+      status: "",
+      paymentStatus: "",
+      amountMin: "",
+      amountMax: "",
+    });
+    setCurrentPage(1);
+  };
 
   // Actions individuelles
   const handleAccept = async (id: string) => {
@@ -212,7 +299,6 @@ export default function EnhancedReservationTable() {
         updatedBy: currentUser?.uid,
       };
 
-      console.log("Mise à jour booking:", updatedBooking);
       await updateBooking(id, updatedBooking as any);
       await updateBookingStatus(id, "confirmed");
 
@@ -225,7 +311,6 @@ export default function EnhancedReservationTable() {
       );
     } catch (error) {
       console.error("Erreur lors de l'acceptation:", error);
-      alert("Erreur lors de la confirmation de la réservation");
     } finally {
       setLoading(false);
     }
@@ -251,7 +336,6 @@ export default function EnhancedReservationTable() {
       );
     } catch (error) {
       console.error("Erreur lors du rejet:", error);
-      alert("Erreur lors de l'annulation de la réservation");
     } finally {
       setLoading(false);
     }
@@ -266,7 +350,6 @@ export default function EnhancedReservationTable() {
       setReservationToDelete(null);
     } catch (error) {
       console.error("Erreur lors de la suppression:", error);
-      alert("Erreur lors de la suppression de la réservation");
     } finally {
       setLoading(false);
     }
@@ -275,73 +358,6 @@ export default function EnhancedReservationTable() {
   const handleView = (reservation: QuickReservation) => {
     setSelectedReservation(reservation);
     setShowViewModal(true);
-  };
-
-  const handleEdit = (reservation: QuickReservation) => {
-    console.log("Éditer la réservation:", reservation);
-    alert(`Fonctionnalité d'édition pour la réservation #${reservation.id}`);
-  };
-
-  // Actions de sélection
-  const handleSelectReservation = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedReservations([...selectedReservations, id]);
-    } else {
-      setSelectedReservations(
-        selectedReservations.filter((resId) => resId !== id),
-      );
-    }
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedReservations(filteredData.map((r) => r.id));
-    } else {
-      setSelectedReservations([]);
-    }
-  };
-
-  // Actions groupées
-  const handleBulkStatusChange = async (status: "confirmed" | "cancelled") => {
-    setLoading(true);
-    try {
-      const promises = selectedReservations.map((id) =>
-        updateBookingStatus(id, status),
-      );
-      await Promise.all(promises);
-
-      setReservations((prev) =>
-        prev.map((r) =>
-          selectedReservations.includes(r.id)
-            ? { ...r, status, updatedAt: new Date() }
-            : r,
-        ),
-      );
-      setSelectedReservations([]);
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour groupée:", error);
-      alert("Erreur lors de la mise à jour groupée");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleBulkDelete = async () => {
-    setLoading(true);
-    try {
-      const promises = selectedReservations.map((id) => deleteBooking(id));
-      await Promise.all(promises);
-
-      setReservations((prev) =>
-        prev.filter((r) => !selectedReservations.includes(r.id)),
-      );
-      setSelectedReservations([]);
-    } catch (error) {
-      console.error("Erreur lors de la suppression groupée:", error);
-      alert("Erreur lors de la suppression groupée");
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Export des données
@@ -355,7 +371,6 @@ export default function EnhancedReservationTable() {
       Heure: r.selectedTime,
       Statut: getStatusText(r.status),
       Total: r.totalAmount,
-      Notes: r.notes,
       Location: r.locationId,
     }));
 
@@ -368,9 +383,7 @@ export default function EnhancedReservationTable() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `reservations_${userRole}_${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
+    a.download = `reservations_${new Date().toISOString().split("T")[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -380,51 +393,60 @@ export default function EnhancedReservationTable() {
     setCurrentPage(page);
   };
 
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
-    setCurrentPage(1);
-  };
-
   // Utilitaires
   const getStatusColor = (status: string) => {
-    if (status === "pending") return "bg-yellow-100 text-yellow-800";
-    if (status === "confirmed") return "bg-green-100 text-green-800";
-    if (status === "cancelled") return "bg-red-100 text-red-800";
-    return "bg-gray-100 text-gray-800";
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "confirmed":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-800 border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
+    }
   };
 
   const getStatusText = (status: string) => {
-    if (status === "pending") return "En attente";
-    if (status === "confirmed") return "Confirmé";
-    if (status === "cancelled") return "Annulé";
-    return status;
+    switch (status) {
+      case "pending":
+        return "En attente";
+      case "confirmed":
+        return "Confirmé";
+      case "cancelled":
+        return "Annulé";
+      default:
+        return status;
+    }
   };
 
-  const uniqueLocations = Array.from(
-    new Set(reservations.map((r) => r.locationId)),
-  );
-  const uniqueStatuses = Array.from(new Set(reservations.map((r) => r.status)));
+  // Calculs pour les statistiques
+  const stats = {
+    total: reservations.length,
+    pending: reservations.filter((r) => r.status === "pending").length,
+    confirmed: reservations.filter((r) => r.status === "confirmed").length,
+    cancelled: reservations.filter((r) => r.status === "cancelled").length,
+    revenue: reservations.reduce((sum, r) => sum + r.totalAmount, 0),
+  };
 
   // Affichage conditionnel selon les permissions
   if (userRole === "admin" && !agentData?.assignedLocationId) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <Shield className="mx-auto h-12 w-12 text-orange-400 mb-4" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Shield className="w-8 h-8 text-orange-500" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
             Accès limité
           </h1>
           <p className="text-gray-600 mb-6">
             Votre compte admin n'est pas encore assigné à une location.
-            Contactez un super administrateur pour configurer votre accès.
           </p>
           <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertCircle className="w-5 h-5 text-orange-400 mr-2" />
-              <div className="text-sm text-orange-700">
-                <strong>Information :</strong> Les administrateurs ne peuvent
-                accéder qu'aux réservations de leur location assignée.
-              </div>
+            <div className="flex items-center text-sm text-orange-700">
+              <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
+              Contactez un super administrateur pour configurer votre accès.
             </div>
           </div>
         </div>
@@ -434,17 +456,13 @@ export default function EnhancedReservationTable() {
 
   if (initialLoading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Chargement des réservations...
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            Chargement en cours...
           </h1>
-          <p className="text-gray-600">
-            {userRole === "admin"
-              ? "Récupération des réservations de votre location..."
-              : "Récupération de toutes les réservations..."}
-          </p>
+          <p className="text-gray-600">Récupération de vos réservations</p>
         </div>
       </div>
     );
@@ -452,30 +470,20 @@ export default function EnhancedReservationTable() {
 
   if (!reservations.length) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen">
-        <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-          <FileText className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
+        <div className="bg-white rounded-2xl shadow-xl p-8 text-center max-w-md">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Calendar className="w-8 h-8 text-blue-500" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Réservations
-            {userRole === "admin" && (
-              <span className="text-sm font-normal text-blue-600 ml-2">
-                (Admin - Location: {agentData?.assignedLocationId})
-              </span>
-            )}
-            {userRole === "superAdmin" && (
-              <span className="text-sm font-normal text-green-600 ml-2">
-                (Super Admin - Toutes locations)
-              </span>
-            )}
+            Aucune réservation
           </h1>
           <p className="text-gray-600 mb-6">
-            {userRole === "admin"
-              ? "Aucune réservation trouvée pour votre location"
-              : "Aucune réservation trouvée"}
+            Commencez par créer votre première réservation.
           </p>
-          <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center mx-auto">
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter une réservation
+          <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center mx-auto">
+            <Plus className="w-5 h-5 mr-2" />
+            Nouvelle réservation
           </button>
         </div>
       </div>
@@ -483,702 +491,837 @@ export default function EnhancedReservationTable() {
   }
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="bg-white rounded-lg shadow-lg">
-        {/* Header avec actions globales */}
-        <div className="px-6 py-4 border-b">
-          <div className="flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="p-6">
+        {/* Header avec statistiques */}
+        <div className="mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                Réservations
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Rendez-vous
                 {userRole === "admin" && (
-                  <span className="ml-3 flex items-center text-sm font-normal bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                    <Shield className="w-4 h-4 mr-1" />
-                    Admin - {agentData?.assignedLocationId}
+                  <span className="ml-3 text-base font-normal bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                    <Shield className="w-4 h-4 inline mr-1" />
+                    Admin
                   </span>
                 )}
                 {userRole === "superAdmin" && (
-                  <span className="ml-3 flex items-center text-sm font-normal bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                    <ShieldCheck className="w-4 h-4 mr-1" />
-                    Super Admin - Toutes locations
+                  <span className="ml-3 text-base font-normal bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
+                    <ShieldCheck className="w-4 h-4 inline mr-1" />
+                    Super Admin
                   </span>
                 )}
               </h1>
               <p className="text-gray-600">
-                Gérez vos réservations clients ({reservations.length} au total)
-                {userRole === "admin" && " - Limitées à votre location"}
+                Gérez vos réservations clients avec une interface intuitive
               </p>
             </div>
-            <div className="flex gap-2">
-              {selectedReservations.length > 0 && (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleBulkStatusChange("confirmed")}
-                    disabled={loading}
-                    className="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center text-sm">
-                    <Check className="w-4 h-4 mr-1" />
-                    Confirmer ({selectedReservations.length})
-                  </button>
-                  <button
-                    onClick={() => handleBulkStatusChange("cancelled")}
-                    disabled={loading}
-                    className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 flex items-center text-sm">
-                    <X className="w-4 h-4 mr-1" />
-                    Annuler ({selectedReservations.length})
-                  </button>
-                  <button
-                    onClick={handleBulkDelete}
-                    disabled={loading}
-                    className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center text-sm">
-                    <Trash2 className="w-4 h-4 mr-1" />
-                    Supprimer ({selectedReservations.length})
-                  </button>
-                </div>
-              )}
+
+            <div className="flex items-center gap-3 mt-4 lg:mt-0">
               <button
-                onClick={handleExport}
-                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center text-sm">
-                <Download className="w-4 h-4 mr-1" />
-                Exporter
-              </button>
-              <button
-                onClick={fetchReservations}
-                disabled={initialLoading}
-                className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center text-sm">
-                <RefreshCw
-                  className={`w-4 h-4 mr-1 ${
-                    initialLoading ? "animate-spin" : ""
-                  }`}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50">
+                <RotateCcw
+                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
                 />
                 Actualiser
               </button>
+              {/* <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <Settings className="w-4 h-4" />
+                Paramètres
+              </button> */}
+              <button
+                onClick={handleExport}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <Download className="w-4 h-4" />
+                Exporter
+              </button>
             </div>
           </div>
-        </div>
 
-        {/* Info panel pour debug/info - à retirer en production */}
-        <div className="px-6 py-3 border-b bg-blue-50">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4 text-blue-700">
-              <span>
-                <strong>Rôle:</strong> {userRole}
-              </span>
-              <span>
-                <strong>Center ID:</strong>{" "}
-                {agentData?.assignedLocationId || "Non assignée"}
-              </span>
-              <span>
-                <strong>Réservations chargées:</strong> {reservations.length}
-              </span>
-            </div>
-            {userRole === "admin" && (
-              <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                Filtrage automatique par location activé
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="px-6 py-4 border-b">
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Rechercher par nom ou email..."
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                className="w-full pl-10 pr-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Filter Toggle */}
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center px-3 py-2 border rounded-md hover:bg-gray-50">
-              <Filter className="w-4 h-4 mr-2" />
-              Filtres
-              <ChevronDown
-                className={`w-4 h-4 ml-2 transition-transform ${
-                  showFilters ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Filters */}
-          {showFilters && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Location Filter - Masqué pour les admins car filtrage automatique */}
-              {userRole === "superAdmin" && (
+          {/* Statistiques visuelles */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Location
+                  <p className="text-sm font-medium text-gray-600">Total</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.total}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    En attente
+                  </p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {stats.pending}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-yellow-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    Confirmées
+                  </p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {stats.confirmed}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Check className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Annulées</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {stats.cancelled}
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                  <X className="w-6 h-6 text-red-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Revenus</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {stats.revenue}€
+                  </p>
+                </div>
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section des filtres améliorée */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+          {/* Barre de recherche rapide */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Rechercher par nom, email ou téléphone..."
+                  value={searchFilter}
+                  onChange={(e) => setSearchFilter(e.target.value)}
+                  onFocus={() => setQuickSearchFocus(true)}
+                  onBlur={() => setQuickSearchFocus(false)}
+                  className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg transition-all ${
+                    quickSearchFocus
+                      ? "border-blue-500 ring-4 ring-blue-100"
+                      : "border-gray-300 hover:border-gray-400"
+                  } focus:outline-none`}
+                />
+                {searchFilter && (
+                  <button
+                    onClick={() => setSearchFilter("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  showAdvancedFilters
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}>
+                <SlidersHorizontal className="w-4 h-4" />
+                Filtres avancés
+                {activeFiltersCount > 0 && (
+                  <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Filtres avancés */}
+          {showAdvancedFilters && (
+            <div className="p-6 bg-gray-50 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                {/* Filtre Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Période
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={advancedFilters.dateFrom}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          dateFrom: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <input
+                      type="date"
+                      value={advancedFilters.dateTo}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          dateTo: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtre Heure */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Heure
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="time"
+                      value={advancedFilters.timeFrom}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          timeFrom: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                    <input
+                      type="time"
+                      value={advancedFilters.timeTo}
+                      onChange={(e) =>
+                        setAdvancedFilters((prev) => ({
+                          ...prev,
+                          timeTo: e.target.value,
+                        }))
+                      }
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtre Client */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Client
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Nom du client"
+                    value={advancedFilters.client}
+                    onChange={(e) =>
+                      setAdvancedFilters((prev) => ({
+                        ...prev,
+                        client: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                  />
+                </div>
+
+                {/* Filtre Statut */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Statut
                   </label>
                   <select
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Toutes les locations</option>
-                    {uniqueLocations.map((locationId) => (
+                    value={advancedFilters.status}
+                    onChange={(e) =>
+                      setAdvancedFilters((prev) => ({
+                        ...prev,
+                        status: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white">
+                    {statusOptions.map((option) => (
                       <option
-                        key={locationId}
-                        value={locationId}>
-                        {locationId}
+                        key={option}
+                        value={option}>
+                        {option}
                       </option>
                     ))}
                   </select>
                 </div>
-              )}
-
-              {/* Status Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Statut
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value="">Tous les statuts</option>
-                  {uniqueStatuses.map((status) => (
-                    <option
-                      key={status}
-                      value={status}>
-                      {getStatusText(status)}
-                    </option>
-                  ))}
-                </select>
               </div>
 
-              {/* Page Size */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Éléments par page
-                </label>
-                <select
-                  value={pageSize}
-                  onChange={(e) =>
-                    handlePageSizeChange(parseInt(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                </select>
+              <div className="flex justify-between items-center">
+                <div className="text-sm text-gray-600">
+                  {activeFiltersCount > 0 && (
+                    <span className="flex items-center gap-2">
+                      <Filter className="w-4 h-4" />
+                      {activeFiltersCount} filtre(s) actif(s)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={resetAllFilters}
+                    disabled={activeFiltersCount === 0}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                    <FilterX className="w-4 h-4" />
+                    Réinitialiser
+                  </button>
+                  <button
+                    onClick={() => console.log("Filtres appliqués")}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Appliquer
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedReservations.length === filteredData.length &&
-                      filteredData.length > 0
-                    }
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded"
-                  />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Client
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Date & Heure
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Location
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Service
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Total
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Statut
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Récurrent
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Notes
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {loading
-                ? // Loading skeleton
+        {/* Tableau principal avec design amélioré */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Header du tableau */}
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Réservations
+                </h3>
+                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  {filteredData.length} résultat
+                  {filteredData.length > 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(parseInt(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                  <option value={10}>10 par page</option>
+                  <option value={25}>25 par page</option>
+                  <option value={50}>50 par page</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Table responsive */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Date & Heure
+                  </th>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Client
+                  </th>
+                  {/* <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Service
+                  </th> */}
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Emplacement
+                  </th>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Statut
+                  </th>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Montant
+                  </th>
+                  <th className="text-left py-4 px-6 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  // Skeleton amélioré
                   Array.from({ length: pageSize }).map((_, index) => (
-                    <tr key={index}>
-                      {Array.from({ length: 10 }).map((_, cellIndex) => (
+                    <tr
+                      key={index}
+                      className="animate-pulse">
+                      {Array.from({ length: 7 }).map((_, cellIndex) => (
                         <td
                           key={cellIndex}
-                          className="px-4 py-4">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                          className="px-6 py-4">
+                          <div className="h-4 bg-gray-200 rounded-lg"></div>
                         </td>
                       ))}
                     </tr>
                   ))
-                : filteredData.map((reservation) => (
+                ) : filteredData.length > 0 ? (
+                  filteredData.map((reservation, index) => (
                     <tr
                       key={reservation.id}
-                      className="hover:bg-gray-50">
-                      {/* Checkbox */}
-                      <td className="px-4 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedReservations.includes(
-                            reservation.id,
-                          )}
-                          onChange={(e) =>
-                            handleSelectReservation(
-                              reservation.id,
-                              e.target.checked,
-                            )
-                          }
-                          className="rounded"
-                        />
-                      </td>
-
-                      {/* Client */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center space-x-2">
-                          <User className="w-4 h-4 text-gray-500" />
-                          <div>
-                            <div className="font-medium text-sm">
-                              {reservation.clientFirstName}{" "}
-                              {reservation.clientLastName}
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {reservation.clientEmail}
-                            </div>
-                            <div className="text-xs text-gray-500 flex items-center">
-                              <Phone className="w-3 h-3 mr-1" />
-                              {reservation.clientPhone}
-                            </div>
+                      className={`hover:bg-gray-50 transition-colors ${
+                        index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                      }`}>
+                      {/* Date & Heure */}
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                            <Calendar className="w-4 h-4 text-blue-500" />
+                            {new Date(
+                              reservation.selectedDate,
+                            ).toLocaleDateString("fr-FR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
+                            <Clock className="w-3 h-3" />
+                            {reservation.selectedTime}
                           </div>
                         </div>
                       </td>
 
-                      {/* Date & Time */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center text-sm font-medium">
-                          <Calendar className="w-4 h-4 mr-1 text-blue-500" />
-                          {reservation.selectedDate}
-                        </div>
-                        <div className="flex items-center text-xs text-gray-500">
-                          <Clock className="w-3 h-3 mr-1" />
-                          {reservation.selectedTime}
-                        </div>
-                      </td>
-
-                      {/* Location */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center text-sm">
-                          <MapPin className="w-4 h-4 mr-1 text-purple-500" />
-                          <LocationDetails booking={reservation} />
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ID: {reservation.locationId}
+                      {/* Client */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                            {reservation.clientFirstName.charAt(0)}
+                            {reservation.clientLastName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {reservation.clientFirstName}{" "}
+                              {reservation.clientLastName}
+                            </div>
+                            <div className="text-sm text-gray-600 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {reservation.clientEmail}
+                            </div>
+                            {reservation.clientPhone && (
+                              <div className="text-sm text-gray-600 flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {reservation.clientPhone}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
 
                       {/* Service */}
-                      <td className="px-4 py-4">
-                        <div className="text-sm font-medium">
+                      {/* <td className="px-6 py-4">
+                        <div className="text-sm">
                           <ServiceDetails booking={reservation} />
                         </div>
-                        <div className="text-xs text-gray-500">
-                          Services:{" "}
-                          {Array.isArray(reservation.selectedServices)
-                            ? reservation.selectedServices.length
-                            : 1}
+                      </td> */}
+
+                      {/* Emplacement */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="w-4 h-4 text-purple-500" />
+                          <LocationDetails booking={reservation} />
                         </div>
                       </td>
 
-                      {/* Total */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center font-semibold text-green-600">
-                          <DollarSign className="w-4 h-4 mr-1" />
-                          {reservation.totalAmount}€
-                        </div>
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-4">
+                      {/* Statut */}
+                      <td className="px-6 py-4">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
                             reservation.status,
                           )}`}>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              reservation.status === "pending"
+                                ? "bg-yellow-400"
+                                : reservation.status === "confirmed"
+                                ? "bg-green-400"
+                                : "bg-red-400"
+                            }`}></div>
                           {getStatusText(reservation.status)}
                         </span>
                       </td>
 
-                      {/* Recurring */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center">
-                          {reservation.isRecurring ? (
-                            <>
-                              <RefreshCw className="w-4 h-4 text-blue-500 mr-1" />
-                              <span className="text-xs text-blue-600">Oui</span>
-                            </>
-                          ) : (
-                            <span className="text-xs text-gray-400">Non</span>
-                          )}
+                      {/* Montant */}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                          <DollarSign className="w-4 h-4" />
+                          {reservation.totalAmount}€
                         </div>
                       </td>
 
-                      {/* Notes */}
-                      <td className="px-4 py-4">
-                        {reservation.notes && (
-                          <div className="flex items-start max-w-xs">
-                            <FileText className="w-4 h-4 mr-1 text-gray-400 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs text-gray-600 line-clamp-2">
-                              {reservation.notes}
-                            </span>
-                          </div>
-                        )}
-                      </td>
-
                       {/* Actions */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center space-x-1">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
                           {reservation.status === "pending" && (
                             <>
                               <button
                                 onClick={() => handleAccept(reservation.id)}
                                 disabled={loading}
-                                className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors disabled:opacity-50"
-                                title="Accepter">
-                                <Check className="w-4 h-4" />
+                                className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors disabled:opacity-50 group"
+                                title="Confirmer">
+                                <Check className="w-4 h-4 group-hover:scale-110 transition-transform" />
                               </button>
                               <button
                                 onClick={() => handleReject(reservation.id)}
                                 disabled={loading}
-                                className="p-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors disabled:opacity-50"
-                                title="Annuler">
-                                <X className="w-4 h-4" />
+                                className="p-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors disabled:opacity-50 group"
+                                title="Rejeter">
+                                <X className="w-4 h-4 group-hover:scale-110 transition-transform" />
                               </button>
                             </>
                           )}
-
-                          {/* Menu actions */}
-                          <div className="relative">
-                            <button
-                              onClick={() => handleView(reservation)}
-                              className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
-                              title="Voir les détails">
-                              <Eye className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          <div className="relative">
-                            <button
-                              onClick={() => handleEdit(reservation)}
-                              className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                              title="Modifier">
-                              <Edit className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          <div className="relative">
-                            <button
-                              onClick={() => {
-                                setReservationToDelete(reservation.id);
-                                setShowDeleteModal(true);
-                              }}
-                              className="p-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-colors"
-                              title="Supprimer">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <button
+                            onClick={() => handleView(reservation)}
+                            className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors group"
+                            title="Voir détails">
+                            <Eye className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setReservationToDelete(reservation.id);
+                              setShowDeleteModal(true);
+                            }}
+                            className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors group"
+                            title="Supprimer">
+                            <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        <div className="px-6 py-4 border-t">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="text-sm text-gray-600">
-              Affichage de {(currentPage - 1) * pageSize + 1} à{" "}
-              {Math.min(currentPage * pageSize, reservations.length)} sur{" "}
-              {reservations.length} réservations
-              {userRole === "admin" && (
-                <span className="text-blue-600 ml-1">
-                  (Location: {agentData?.assignedLocationId})
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => handlePageChange(1)}
-                disabled={currentPage === 1}
-                className="p-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-                <ChevronsLeft className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              <span className="px-3 py-2 text-sm">
-                Page {currentPage} sur {totalPages}
-              </span>
-
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => handlePageChange(totalPages)}
-                disabled={currentPage === totalPages}
-                className="p-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
-                <ChevronsRight className="w-4 h-4" />
-              </button>
-            </div>
+                  ))
+                ) : (
+                  // État vide amélioré
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-6 py-12">
+                      <div className="text-center">
+                        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Search className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                          Aucune réservation trouvée
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                          Essayez de modifier vos critères de recherche ou créez
+                          une nouvelle réservation.
+                        </p>
+                        <div className="flex justify-center gap-3">
+                          <button
+                            onClick={resetAllFilters}
+                            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            Réinitialiser les filtres
+                          </button>
+                          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Nouvelle réservation
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        </div>
 
-        {/* Footer avec statistiques */}
-        <div className="px-6 py-4 border-t bg-gray-50">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm text-gray-600">
-            <div className="flex items-center space-x-4">
-              <span>Total: {reservations.length} réservations</span>
-              {userRole === "admin" && (
-                <span className="text-blue-600 bg-blue-100 px-2 py-1 rounded text-xs">
-                  Filtré par location: {agentData?.assignedLocationId}
-                </span>
-              )}
+          {/* Pagination améliorée */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-sm text-gray-600">
+                  Affichage de {(currentPage - 1) * pageSize + 1} à{" "}
+                  {Math.min(currentPage * pageSize, reservations.length)} sur{" "}
+                  {reservations.length} réservations
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors">
+                    <ChevronsLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors">
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                      const page = i + 1;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                            currentPage === page
+                              ? "bg-blue-600 text-white"
+                              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}>
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors">
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handlePageChange(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white transition-colors">
+                    <ChevronsRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-4">
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-yellow-100 rounded-full mr-1"></div>
-                En attente:{" "}
-                {reservations.filter((r) => r.status === "pending").length}
-              </span>
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-green-100 rounded-full mr-1"></div>
-                Confirmées:{" "}
-                {reservations.filter((r) => r.status === "confirmed").length}
-              </span>
-              <span className="flex items-center">
-                <div className="w-3 h-3 bg-red-100 rounded-full mr-1"></div>
-                Annulées:{" "}
-                {reservations.filter((r) => r.status === "cancelled").length}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Modal de suppression */}
+      {/* Modal de suppression amélioré */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600 mr-3" />
-              <h3 className="text-lg font-semibold">
-                Confirmer la suppression
-              </h3>
-            </div>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir supprimer cette réservation ? Cette
-              action ne peut pas être annulée.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setReservationToDelete(null);
-                }}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                disabled={loading}>
-                Annuler
-              </button>
-              <button
-                onClick={() =>
-                  reservationToDelete && handleDelete(reservationToDelete)
-                }
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                disabled={loading}>
-                {loading ? "Suppression..." : "Supprimer"}
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                  <AlertCircle className="w-6 h-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Confirmer la suppression
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Cette action est irréversible
+                  </p>
+                </div>
+              </div>
+              <p className="text-gray-600 mb-6">
+                Êtes-vous sûr de vouloir supprimer cette réservation ? Toutes
+                les données associées seront perdues définitivement.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setReservationToDelete(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={loading}>
+                  Annuler
+                </button>
+                <button
+                  onClick={() =>
+                    reservationToDelete && handleDelete(reservationToDelete)
+                  }
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                  disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de visualisation */}
+      {/* Modal de visualisation amélioré */}
       {showViewModal && selectedReservation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold">
-                Détails de la réservation
-              </h3>
-              <button
-                onClick={() => {
-                  setShowViewModal(false);
-                  setSelectedReservation(null);
-                }}
-                className="text-gray-400 hover:text-gray-600">
-                <X className="w-6 h-6" />
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Détails de la réservation
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    ID: {selectedReservation.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowViewModal(false);
+                    setSelectedReservation(null);
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Informations client */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 border-b pb-2">
-                  Informations client
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <User className="w-4 h-4 text-gray-400" />
-                    <span className="font-medium">
-                      {selectedReservation.clientFirstName}{" "}
-                      {selectedReservation.clientLastName}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span>{selectedReservation.clientEmail}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{selectedReservation.clientPhone}</span>
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                {/* Informations client */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <User className="w-5 h-5 text-blue-500" />
+                    Informations client
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">
+                        Nom complet
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        {selectedReservation.clientFirstName}{" "}
+                        {selectedReservation.clientLastName}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">
+                        Email
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        {selectedReservation.clientEmail}
+                      </div>
+                    </div>
+                    {selectedReservation.clientPhone && (
+                      <div>
+                        <div className="text-sm font-medium text-gray-700">
+                          Téléphone
+                        </div>
+                        <div className="text-sm text-gray-900">
+                          {selectedReservation.clientPhone}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Informations réservation */}
-              <div className="space-y-4">
-                <h4 className="font-semibold text-gray-900 border-b pb-2">
-                  Détails de la réservation
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4 text-gray-400" />
-                    <span>{selectedReservation.selectedDate}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Clock className="w-4 h-4 text-gray-400" />
-                    <span>{selectedReservation.selectedTime}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <MapPin className="w-4 h-4 text-gray-400" />
+                {/* Détails de la réservation */}
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-green-500" />
+                    Détails de la réservation
+                  </h4>
+                  <div className="space-y-3">
                     <div>
-                      <LocationDetails booking={selectedReservation} />
-                      <div className="text-xs text-gray-500">
-                        ID: {selectedReservation.locationId}
+                      <div className="text-sm font-medium text-gray-700">
+                        Date
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        {selectedReservation.selectedDate}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">
+                        Heure
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        {selectedReservation.selectedTime}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">
+                        Emplacement
+                      </div>
+                      <div className="text-sm text-gray-900">
+                        <LocationDetails booking={selectedReservation} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-gray-700">
+                        Montant
+                      </div>
+                      <div className="text-sm font-semibold text-green-600">
+                        {selectedReservation.totalAmount}€
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Settings className="w-4 h-4 text-gray-400" />
-                    <ServiceDetails booking={selectedReservation} />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <DollarSign className="w-4 h-4 text-gray-400" />
-                    <span className="font-semibold text-green-600">
-                      {selectedReservation.totalAmount}€
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 text-gray-400" />
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        selectedReservation.status,
-                      )}`}>
-                      {getStatusText(selectedReservation.status)}
-                    </span>
-                  </div>
-                  {selectedReservation.isRecurring && (
-                    <div className="flex items-center space-x-2">
-                      <RefreshCw className="w-4 h-4 text-blue-500" />
-                      <span className="text-blue-600">
-                        Réservation récurrente
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
 
-            {/* Notes */}
-            {selectedReservation.notes && (
-              <div className="mt-6">
-                <h4 className="font-semibold text-gray-900 border-b pb-2 mb-3">
-                  Notes
+              {/* Service */}
+              <div className="bg-blue-50 rounded-xl p-4 mb-6">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-purple-500" />
+                  Service
                 </h4>
-                <div className="bg-gray-50 p-3 rounded-md">
-                  <p className="text-gray-700">{selectedReservation.notes}</p>
-                </div>
+                <ServiceDetails booking={selectedReservation} />
               </div>
-            )}
 
-            {/* Actions dans le modal */}
-            <div className="mt-6 flex justify-end space-x-3">
-              {selectedReservation.status === "pending" && (
-                <>
-                  <button
-                    onClick={() => {
-                      handleAccept(selectedReservation.id);
-                      setShowViewModal(false);
-                      setSelectedReservation(null);
-                    }}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center"
-                    disabled={loading}>
-                    <Check className="w-4 h-4 mr-2" />
-                    Confirmer
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleReject(selectedReservation.id);
-                      setShowViewModal(false);
-                      setSelectedReservation(null);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
-                    disabled={loading}>
-                    <X className="w-4 h-4 mr-2" />
-                    Annuler
-                  </button>
-                </>
+              {/* Notes */}
+              {selectedReservation.notes && (
+                <div className="bg-yellow-50 rounded-xl p-4 mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-orange-500" />
+                    Notes
+                  </h4>
+                  <p className="text-sm text-gray-700">
+                    {selectedReservation.notes}
+                  </p>
+                </div>
               )}
-              <button
-                onClick={() => {
-                  handleEdit(selectedReservation);
-                  setShowViewModal(false);
-                  setSelectedReservation(null);
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
-                <Edit className="w-4 h-4 mr-2" />
-                Modifier
-              </button>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                {selectedReservation.status === "pending" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleAccept(selectedReservation.id);
+                        setShowViewModal(false);
+                        setSelectedReservation(null);
+                      }}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                      disabled={loading}>
+                      <Check className="w-4 h-4" />
+                      Confirmer
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleReject(selectedReservation.id);
+                        setShowViewModal(false);
+                        setSelectedReservation(null);
+                      }}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                      disabled={loading}>
+                      <X className="w-4 h-4" />
+                      Rejeter
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

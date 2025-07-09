@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { QuickReservation } from "@/types";
 import ServiceDetails from "@/pages/ServiceByReservations";
+import BookingCard from "../bookings/BookingCard";
 // import ServiceDetails from";
 
 interface CalendarGridProps {
@@ -18,6 +19,8 @@ interface CalendarGridProps {
   reservations: QuickReservation[];
   onBookingClick: (booking: QuickReservation) => void;
   getBookingsForDate: (date: Date) => QuickReservation[];
+  // getServiceById: (serviceId: string) => Promise<any>;
+  // getCategoryById: (categoryId: string) => Promise<any>;
 }
 
 const CalendarGrid: React.FC<CalendarGridProps> = ({
@@ -25,6 +28,8 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
   reservations,
   onBookingClick,
   getBookingsForDate,
+  // getCategoryById,
+  // getServiceById,
 }) => {
   // Créneaux horaires de 6h à 23h
   const timeSlots = Array.from({ length: 18 }, (_, i) => {
@@ -70,6 +75,7 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
+  const HOUR_HEIGHT = 80;
 
   return (
     <div className="p-6">
@@ -124,42 +130,22 @@ const CalendarGrid: React.FC<CalendarGridProps> = ({
                 return (
                   <div
                     key={`${timeSlot}-${dayIndex}`}
-                    className={`border-r last:border-r-0 min-h-[80px] p-1 relative ${
+                    className={`border-r last:border-r-0 relative ${
                       isToday(day) ? "bg-blue-50/30" : "bg-white"
-                    }`}>
+                    }`}
+                    style={{ height: `${HOUR_HEIGHT}px` }}>
+                    {/* Utiliser le composant BookingCard pour chaque réservation */}
                     {slotBookings.map((booking, bookingIndex) => (
-                      <div
+                      <BookingCard
                         key={booking.id}
-                        onClick={() => onBookingClick(booking)}
-                        className={`absolute left-1 right-1 rounded-md cursor-pointer transform hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md ${getStatusColor(
-                          booking.status,
-                        )} border p-2 mb-1`}
-                        style={{
-                          top: `${bookingIndex * 2}px`,
-                          minHeight: "70px",
-                          zIndex: 10 + bookingIndex,
-                        }}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <div className="flex items-center space-x-1">
-                            {getStatusIcon(booking.status)}
-                            <span className="font-medium">
-                              {booking.selectedTime}
-                            </span>
-                          </div>
-                          {booking.isRecurring && (
-                            <RefreshCw className="w-3 h-3" />
-                          )}
-                        </div>
-                        <div className="text-xs font-semibold truncate">
-                          {booking.clientFirstName} {booking.clientLastName}
-                        </div>
-                        <div className="text-xs truncate opacity-80 mt-1">
-                          <ServiceDetails booking={booking} />
-                        </div>
-                        <div className="text-xs font-medium text-green-600 mt-1">
-                          {booking.totalAmount}€
-                        </div>
-                      </div>
+                        booking={booking}
+                        bookingIndex={bookingIndex}
+                        onClick={onBookingClick}
+                        // getServiceById={getServiceById}
+                        // getCategoryById={getCategoryById}
+                        timeSlot={timeSlot}
+                        HOUR_HEIGHT={HOUR_HEIGHT}
+                      />
                     ))}
                   </div>
                 );
